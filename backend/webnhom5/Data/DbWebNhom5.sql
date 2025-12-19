@@ -1,0 +1,4 @@
+CREATE DATABASE DbWebNhom5;
+GO
+USE DbWebNhom5;
+GO
