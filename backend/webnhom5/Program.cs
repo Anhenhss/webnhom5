@@ -1,38 +1,53 @@
-using Microsoft.AspNetCore.Identity;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using webnhom5.Data;
 using webnhom5.Models;
+using webnhom5.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// 1. Cấu hình DB Context
+builder.Services.AddDbContext<FashionDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+// 2. Cấu hình Repository Pattern (Dependency Injection)
+// Đăng ký Generic Repository
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+// Sau này các em sẽ đăng ký thêm: builder.Services.AddScoped<IAuthService, AuthService>();
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
-    // Cấu hình password 
-    options.Password.RequireDigit = true; // Yêu cầu có số
-    options.Password.RequireLowercase = true;
-    options.Password.RequireNonAlphanumeric = false; // Không bắt buộc ký tự đặc biệt (@, #) cho dễ test
-    options.Password.RequireUppercase = true;
-    options.Password.RequiredLength = 6; // Độ dài tối thiểu 6
-    
-    // Cấu hình User
-    options.User.RequireUniqueEmail = true; // Email không được trùng
+// 3. Cấu hình AutoMapper
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// 4. Cấu hình JWT Authentication
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddEntityFrameworkStores<AppDbContext>()
-.AddDefaultTokenProviders();
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+});
 
+// 5. Add Controllers & Swagger
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// 6. Configure Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -41,8 +56,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication(); 
-
+app.UseAuthentication(); // Phải đặt trước Authorization
 app.UseAuthorization();
 
 app.MapControllers();

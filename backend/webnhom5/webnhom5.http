@@ -1,0 +1,6 @@
+@webnhom5_HostAddress = http://localhost:5195
+
+GET {{webnhom5_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
