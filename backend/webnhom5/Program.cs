@@ -16,6 +16,7 @@ builder.Services.AddDbContext<FashionDbContext>(options =>
 // Đăng ký Generic Repository
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 // Sau này các em sẽ đăng ký thêm: builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 // 3. Cấu hình AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
