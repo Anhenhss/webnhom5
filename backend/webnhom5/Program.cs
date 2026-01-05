@@ -5,8 +5,13 @@ using Microsoft.IdentityModel.Tokens;
 using webnhom5.Data;
 using webnhom5.Models;
 using webnhom5.Repositories;
+using webnhom5.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<ICatalogRepository, CatalogRepository>();
+
+builder.Services.AddScoped<ICatalogService, CatalogService>();
 
 // 1. Cấu hình DB Context
 builder.Services.AddDbContext<FashionDbContext>(options =>
