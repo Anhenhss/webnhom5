@@ -9,9 +9,8 @@ using webnhom5.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<ICatalogRepository, CatalogRepository>();
 
-builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
 // 1. Cấu hình DB Context
 builder.Services.AddDbContext<FashionDbContext>(options =>
