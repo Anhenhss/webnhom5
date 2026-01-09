@@ -35,7 +35,8 @@ namespace webnhom5.Services
             }
             else
             {
-                var cartItem = new CartItems
+                // SỬA: Dùng Class CartItem (Số ít)
+                var cartItem = new CartItem
                 {
                     UserId = userId,
                     ProductId = dto.ProductId,
@@ -122,18 +123,18 @@ namespace webnhom5.Services
                     totalAmount += price * (item.Quantity ?? 0);
                 }
 
-                // Bước 3: Tạo Order (Snapshot Address)
-                var order = new Orders
+                // Bước 3: Tạo Order (Snapshot Address) - SỬA: Dùng Class Order (Số ít)
+                var order = new Order
                 {
                     UserId = userId,
-                    OrderCode = "ORD-" + DateTime.Now.Ticks, // Mã đơn giản
+                    OrderCode = "ORD-" + DateTime.Now.Ticks, 
                     OrderDate = DateTime.Now,
-                    ShippingName = dto.ShippingName,       // SNAPSHOT
-                    ShippingAddress = dto.ShippingAddress, // SNAPSHOT
-                    ShippingPhone = dto.ShippingPhone,     // SNAPSHOT
+                    ShippingName = dto.ShippingName,       
+                    ShippingAddress = dto.ShippingAddress, 
+                    ShippingPhone = dto.ShippingPhone,     
                     PaymentMethod = dto.PaymentMethod,
                     TotalAmount = totalAmount,
-                    FinalAmount = totalAmount, // Chưa tính giảm giá/phí ship
+                    FinalAmount = totalAmount, 
                     Status = 0, // Pending
                     PaymentStatus = "Unpaid"
                 };
@@ -141,26 +142,26 @@ namespace webnhom5.Services
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync(); // Để lấy OrderId
 
-                // Bước 4: Tạo OrderDetails (Snapshot Product Data)
+                // Bước 4: Tạo OrderDetails (Snapshot Product Data) - SỬA: Dùng Class OrderDetail (Số ít)
                 foreach (var item in cartItems)
                 {
                     decimal price = item.Product.Price + (item.ProductVariant.PriceModifier ?? 0);
-                    var detail = new OrderDetails
+                    var detail = new OrderDetail
                     {
                         OrderId = order.Id,
                         ProductVariantId = item.ProductVariantId,
                         Quantity = item.Quantity ?? 0,
                         UnitPrice = price,
-                        // SNAPSHOT DATA: Lưu cứng tên và ảnh lúc mua
-                        Snapshot_ProductName = item.Product.Name, 
-                        Snapshot_Sku = item.ProductVariant.Sku,
-                        Snapshot_Thumbnail = item.Product.Thumbnail
+                        // SỬA: Tên thuộc tính PascalCase (bỏ dấu gạch dưới)
+                        SnapshotProductName = item.Product.Name, 
+                        SnapshotSku = item.ProductVariant.Sku,
+                        SnapshotThumbnail = item.Product.Thumbnail
                     };
                     _context.OrderDetails.Add(detail);
                 }
 
-                // Bước 5: Ghi log trạng thái khởi tạo
-                _context.OrderStatusHistory.Add(new OrderStatusHistory
+                // Bước 5: Ghi log trạng thái khởi tạo - SỬA: DbSet OrderStatusHistories
+                _context.OrderStatusHistories.Add(new OrderStatusHistory
                 {
                     OrderId = order.Id,
                     NewStatus = 0,
@@ -173,14 +174,13 @@ namespace webnhom5.Services
                 _context.CartItems.RemoveRange(cartItems);
                 await _context.SaveChangesAsync();
 
-                // Commit Transaction: Chỉ khi mọi thứ OK mới lưu DB
+                // Commit Transaction
                 await transaction.CommitAsync();
 
                 return order.OrderCode;
             }
             catch (Exception)
             {
-                // Có lỗi -> Rollback toàn bộ (Không trừ kho, không tạo đơn)
                 await transaction.RollbackAsync();
                 throw;
             }
@@ -210,6 +210,7 @@ namespace webnhom5.Services
 
         public async Task<OrderResponseDto?> GetOrderByIdAsync(int id)
         {
+            // SỬA: Include OrderStatusHistories (số nhiều)
             var o = await _context.Orders
                 .Include(x => x.OrderDetails)
                 .Include(x => x.OrderStatusHistories)
@@ -229,9 +230,10 @@ namespace webnhom5.Services
                 FinalAmount = o.FinalAmount,
                 OrderDetails = o.OrderDetails.Select(d => new OrderDetailDto
                 {
-                    ProductName = d.Snapshot_ProductName, // Lấy từ Snapshot
-                    Sku = d.Snapshot_Sku,
-                    Thumbnail = d.Snapshot_Thumbnail,
+                    // SỬA: Tên thuộc tính PascalCase
+                    ProductName = d.SnapshotProductName, 
+                    Sku = d.SnapshotSku,
+                    Thumbnail = d.SnapshotThumbnail,
                     Quantity = d.Quantity,
                     UnitPrice = d.UnitPrice
                 }).ToList(),
@@ -245,32 +247,25 @@ namespace webnhom5.Services
             };
         }
 
-        // --- 4. STATE MACHINE (MÁY TRẠNG THÁI) ---
+        // --- 4. STATE MACHINE ---
         public async Task UpdateOrderStatusAsync(int orderId, int newStatus, string? note, string updatedBy)
         {
             var order = await _context.Orders.FindAsync(orderId);
             if (order == null) throw new Exception("Đơn hàng không tồn tại");
 
             int oldStatus = order.Status ?? 0;
-
-            // Logic chặn nhảy cóc trạng thái
-            // 0: Pending -> 1: Confirmed
-            // 1: Confirmed -> 2: Shipping
-            // 2: Shipping -> 3: Completed OR 5: Failed
-            // 4: Canceled (Hủy được khi chưa Shipping)
             
             bool isValid = false;
-            if (newStatus == 4 && oldStatus < 2) isValid = true; // Hủy khi chưa giao
-            else if (newStatus == oldStatus + 1 && oldStatus < 3) isValid = true; // Đi tiếp 1 bước
-            else if (oldStatus == 2 && newStatus == 5) isValid = true; // Giao thất bại
+            if (newStatus == 4 && oldStatus < 2) isValid = true; 
+            else if (newStatus == oldStatus + 1 && oldStatus < 3) isValid = true; 
+            else if (oldStatus == 2 && newStatus == 5) isValid = true; 
 
             if (!isValid) throw new Exception($"Không thể chuyển trạng thái từ {GetStatusName(oldStatus)} sang {GetStatusName(newStatus)}");
 
-            // Update
             order.Status = newStatus;
             
-            // Log History
-            _context.OrderStatusHistory.Add(new OrderStatusHistory
+            // SỬA: DbSet OrderStatusHistories
+            _context.OrderStatusHistories.Add(new OrderStatusHistory
             {
                 OrderId = order.Id,
                 PreviousStatus = oldStatus,
@@ -290,7 +285,7 @@ namespace webnhom5.Services
             
             var stats = await _context.Orders
                 .Where(o => o.OrderDate >= fromDate && o.Status == 3) // Chỉ tính đơn thành công
-                .GroupBy(o => o.OrderDate.Value.Date)
+                .GroupBy(o => o.OrderDate.Value.Date) // Sửa: Gom nhóm theo ngày (bỏ giờ phút)
                 .Select(g => new RevenueStatisticDto
                 {
                     Date = g.Key.ToString("dd/MM/yyyy"),
