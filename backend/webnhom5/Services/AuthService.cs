@@ -3,141 +3,167 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Google.Apis.Auth;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using webnhom5.Repositories;
+using webnhom5.Data;
 using webnhom5.DTOs;
 using webnhom5.Models;
+using webnhom5.Repositories;
 
-namespace webnhom5.Services;
+namespace webnhom5.Services
+{
+    public class AuthService : IAuthService
+    {
+        private readonly FashionDbContext _context;
+        private readonly IGenericRepository<User> _userRepository; // Dùng User (số ít)
+        private readonly IConfiguration _configuration;
 
-public interface IAuthService {
-    Task<AuthResponse> RegisterAsync(RegisterDto dto);
-    Task<AuthResponse> LoginAsync(LoginDto dto);
-    Task<AuthResponse> GoogleLoginAsync(string idToken);
-    Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest dto);
-}
-
-public class AuthService : IAuthService {
-    private readonly IUserRepository _userRepo;
-    private readonly IConfiguration _config;
-
-    public AuthService(IUserRepository userRepo, IConfiguration config) {
-        _userRepo = userRepo;
-        _config = config;
-    }
-
-    // Đăng ký tài khoản mới
-    public async Task<AuthResponse> RegisterAsync(RegisterDto dto) {
-        if (await _userRepo.GetByEmailAsync(dto.Email) != null) 
-            return new AuthResponse(false, "Email đã tồn tại trong hệ thống");
-        
-        var user = new User { 
-            Email = dto.Email, 
-            FullName = dto.FullName, 
-            Role = "Customer", // Role mặc định cho người dùng mới
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password), 
-            IsLocked = false, 
-            CreatedAt = DateTime.Now 
-        };
-
-        await _userRepo.AddAsync(user);
-        await _userRepo.SaveChangesAsync();
-        return new AuthResponse(true, "Đăng ký tài khoản thành công");
-    }
-
-    // Đăng nhập thông thường (Email + Password)
-    public async Task<AuthResponse> LoginAsync(LoginDto dto) {
-        var user = await _userRepo.GetByEmailAsync(dto.Email);
-        
-        if (user == null || user.IsLocked == true || string.IsNullOrEmpty(user.PasswordHash) ||
-            !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) {
-            return new AuthResponse(false, "Email hoặc mật khẩu không chính xác");
+        public AuthService(FashionDbContext context, IGenericRepository<User> userRepository, IConfiguration configuration)
+        {
+            _context = context;
+            _userRepository = userRepository;
+            _configuration = configuration;
         }
 
-        return await GenerateAuthResponse(user);
-    }
+        public async Task<User> RegisterAsync(RegisterDto dto)
+        {
+            // _context.Users là tên bảng của thầy, u => u là kiểu User. Khớp!
+            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+                throw new Exception("Email đã tồn tại.");
 
-    // Xử lý Google Login (Logic Gộp tài khoản khó nhất)
-    public async Task<AuthResponse> GoogleLoginAsync(string idToken) {
-        try {
-            // Verify token gửi từ Frontend
-            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
-            var user = await _userRepo.GetByEmailAsync(payload.Email);
+            var newUser = new User
+            {
+                FullName = dto.FullName,
+                Email = dto.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                Role = "Customer",
+                IsLocked = false,
+                CreatedAt = DateTime.Now
+            };
 
-            if (user == null) {
-                //  Email chưa tồn tại -> Tạo mới hoàn toàn
-                user = new User { 
-                    Email = payload.Email, 
-                    FullName = payload.Name, 
-                    GoogleId = payload.Subject, 
-                    Role = "Customer",
-                    IsLocked = false, 
-                    CreatedAt = DateTime.Now 
-                };
-                await _userRepo.AddAsync(user);
-            } 
-            else if (string.IsNullOrEmpty(user.GoogleId)) {
-                
-                // Nếu Email đã có (do đăng ký thường) nhưng chưa liên kết GoogleId
-                user.GoogleId = payload.Subject;
-                await _userRepo.UpdateAsync(user);
+            await _userRepository.AddAsync(newUser);
+            await _context.SaveChangesAsync();
+            return newUser;
+        }
+
+        public async Task<TokenResponseDto?> LoginAsync(LoginDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            
+            if (user == null || string.IsNullOrEmpty(user.PasswordHash) || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+                return null;
+
+            if (user.IsLocked == true) throw new Exception("Tài khoản bị khóa.");
+
+            return await GenerateTokenPairAsync(user);
+        }
+
+        public async Task<TokenResponseDto> GoogleLoginAsync(GoogleLoginDto googleDto)
+        {
+            GoogleJsonWebSignature.Payload payload;
+            try {
+                payload = await GoogleJsonWebSignature.ValidateAsync(googleDto.IdToken);
+            } catch {
+                throw new Exception("Google Token không hợp lệ.");
             }
 
-            await _userRepo.SaveChangesAsync();
-            return await GenerateAuthResponse(user);
-        } 
-        catch (Exception) { 
-            return new AuthResponse(false, "Xác thực tài khoản Google không hợp lệ"); 
-        }
-    }
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == payload.Email);
 
-    // Cấp lại Token mới (Refresh Token)
-    public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest dto) {
-        var user = await _userRepo.GetByEmailAsync(dto.Email);
-        
-        if (user == null || user.IsLocked == true) {
-            return new AuthResponse(false, "Phiên đăng nhập không hợp lệ hoặc tài khoản bị khóa");
-        }
-        
-        
-        return await GenerateAuthResponse(user);
-    }
+            if (user != null) {
+                if (string.IsNullOrEmpty(user.GoogleId)) {
+                    user.GoogleId = payload.Subject;
+                    await _userRepository.UpdateAsync(user);
+                }
+            } else {
+                user = new User {
+                    Email = payload.Email,
+                    FullName = payload.Name,
+                    GoogleId = payload.Subject,
+                    PasswordHash = null,
+                    Role = "Customer",
+                    IsLocked = false,
+                    CreatedAt = DateTime.Now,
+                    AvatarUrl = payload.Picture
+                };
+                await _userRepository.AddAsync(user);
+            }
 
-    // Tạo cặp Access Token và Refresh Token
-    private async Task<AuthResponse> GenerateAuthResponse(User user) {
-        var token = CreateJwtToken(user);
-        
-        // Tạo Refresh Token ngẫu nhiên (chuỗi dài an toàn)
-        var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
-        
-        return new AuthResponse(true, "Xác thực thành công", token, refreshToken);
-    }
-
-    // Tạo chuỗi JWT (Mã hóa Role và Email)
-    private string CreateJwtToken(User user) {
-        var claims = new[] { 
-            new Claim(ClaimTypes.Email, user.Email), 
-            new Claim(ClaimTypes.Role, user.Role ?? "Customer"), 
-            new Claim("UserId", user.Id.ToString()),
-            new Claim("FullName", user.FullName)
-        };
-
-        var keyString = _config["Jwt:Key"];
-        if (string.IsNullOrEmpty(keyString) || keyString.Length < 32) {
-            throw new Exception("Lỗi bảo mật: Jwt:Key trong appsettings.json phải có ít nhất 32 ký tự!");
+            await _context.SaveChangesAsync();
+            return await GenerateTokenPairAsync(user);
         }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        public async Task<TokenResponseDto?> RefreshTokenAsync(RefreshTokenDto tokenDto)
+        {
+            var principal = GetPrincipalFromExpiredToken(tokenDto.AccessToken);
+            if (principal == null) return null;
 
-        var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.Now.AddHours(1), // Token có hạn trong 1 giờ
-            signingCredentials: creds
-        );
+            var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return null;
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+            var user = await _userRepository.GetByIdAsync(int.Parse(userIdClaim.Value));
+
+            if (user == null || user.RefreshToken != tokenDto.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
+                return null;
+
+            return await GenerateTokenPairAsync(user);
+        }
+
+        private async Task<TokenResponseDto> GenerateTokenPairAsync(User user)
+        {
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+            var durationMinutes = jwtSettings.GetValue<int>("DurationMinutes", 60);
+
+            var claims = new List<Claim> {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.FullName ?? ""),
+                new Claim(ClaimTypes.Role, user.Role ?? "Customer")
+            };
+
+            var tokenDescriptor = new SecurityTokenDescriptor {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(durationMinutes),
+                Issuer = jwtSettings["Issuer"],
+                Audience = jwtSettings["Audience"],
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var accessToken = tokenHandler.CreateToken(tokenDescriptor);
+            var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
+            
+            await _userRepository.UpdateAsync(user); 
+            await _context.SaveChangesAsync();
+
+            return new TokenResponseDto {
+                AccessToken = tokenHandler.WriteToken(accessToken),
+                RefreshToken = refreshToken,
+                ExpiresInMinutes = durationMinutes
+            };
+        }
+
+        private ClaimsPrincipal? GetPrincipalFromExpiredToken(string? token)
+        {
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var tokenValidationParameters = new TokenValidationParameters {
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!)),
+                ValidateLifetime = false 
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            try {
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+                if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                    return null;
+                return principal;
+            } catch { return null; }
+        }
     }
 }
