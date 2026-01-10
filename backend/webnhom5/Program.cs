@@ -2,34 +2,31 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using webnhom5.Data;
-using webnhom5.Models;
-using webnhom5.Repositories;
-using webnhom5.Services;
+using webnhom5.Repositories; 
+using webnhom5.Services;     
 
 var builder = WebApplication.CreateBuilder(args);
-
-
-builder.Services.AddScoped<IProductService, ProductService>();
-
-// 1. Cấu hình DB Context
+// 1. CẤU HÌNH DATABASE & CORE
 builder.Services.AddDbContext<FashionDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Cấu hình Repository Pattern (Dependency Injection)
-// Đăng ký Generic Repository
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-// Sau này các em sẽ đăng ký thêm: builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-
-// Đăng ký Service và Repo 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-
-// 3. Cấu hình AutoMapper
+// Cấu hình AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+// 2. DEPENDENCY INJECTION (ĐĂNG KÝ DỊCH VỤ)
+// A. Repositories
+// Đăng ký Generic Repository (Dùng chung cho tất cả bảng)
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-// 4. Cấu hình JWT Authentication
+// B. Services 
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IMarketingService, MarketingService>();
+
+// 3. CẤU HÌNH AUTHENTICATION (JWT)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,18 +42,53 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
 });
-
-// 5. Add Controllers & Swagger
+// 4. CẤU HÌNH SWAGGER & API
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Cấu hình Swagger để hiện nút "Authorize" (Nhập Token)
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Fashion Shop API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Nhập token theo định dạng: Bearer {your_token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
+// Thêm CORS (Cho phép Frontend gọi API)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
 
 var app = builder.Build();
 
-// 6. Configure Pipeline
+// 5. CẤU HÌNH PIPELINE (MIDDLEWARE)
+
+// Môi trường Dev
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -65,8 +97,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication(); // Phải đặt trước Authorization
-app.UseAuthorization();
+//Cho phép truy cập ảnh trong thư mục wwwroot
+app.UseStaticFiles(); 
+
+app.UseCors("AllowAll");
+
+// Thứ tự Auth
+app.UseAuthentication(); // 1. Xác thực (Bạn là ai?)
+app.UseAuthorization();  // 2. Phân quyền (Bạn được làm gì?)
 
 app.MapControllers();
 
