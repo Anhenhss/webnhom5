@@ -1,7 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using webnhom5.Data;
 using webnhom5.DTOs;
 using webnhom5.Models;
@@ -17,20 +14,21 @@ namespace webnhom5.Services
             _context = context;
         }
 
-        // --- QUẢN LÝ USER (DÀNH CHO ADMIN) ---
+        // 1. ADMIN USER MANAGEMENT (QUẢN LÝ NGƯỜI DÙNG)
+
+        // Lấy danh sách User (Có tìm kiếm và phân trang)
         public async Task<List<UserResponseDto>> GetAllUsersAsync(string? search, int page, int pageSize)
         {
             var query = _context.Users.AsQueryable();
 
             if (!string.IsNullOrEmpty(search))
             {
-                // Sử dụng ToLower() để tìm kiếm không phân biệt chữ hoa chữ thường
-                query = query.Where(u => u.Email.ToLower().Contains(search.ToLower()) 
-                                      || u.FullName.ToLower().Contains(search.ToLower()));
+                // Tìm theo Email hoặc Tên
+                query = query.Where(u => u.Email.Contains(search) || u.FullName.Contains(search));
             }
 
             return await query
-                .OrderBy(u => u.Id) // Nên có OrderBy khi dùng Skip/Take
+                .OrderByDescending(u => u.CreatedAt) // Mới nhất lên đầu
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(u => new UserResponseDto
@@ -45,32 +43,62 @@ namespace webnhom5.Services
                 }).ToListAsync();
         }
 
+        // Lấy chi tiết một User theo ID
+        public async Task<UserResponseDto?> GetUserByIdAsync(int id)
+        {
+            var u = await _context.Users.FindAsync(id);
+            if (u == null) return null;
+
+            return new UserResponseDto
+            {
+                Id = u.Id,
+                FullName = u.FullName,
+                Email = u.Email,
+                PhoneNumber = u.PhoneNumber,
+                Role = u.Role ?? "Customer",
+                IsLocked = u.IsLocked ?? false,
+                GoogleId = u.GoogleId
+            };
+        }
+
+        // Khóa hoặc Mở khóa tài khoản
         public async Task LockUserAsync(int userId, bool isLocked)
         {
             var user = await _context.Users.FindAsync(userId);
-            if (user == null) throw new KeyNotFoundException("Không tìm thấy người dùng");
+            if (user == null) throw new Exception("Không tìm thấy người dùng");
             
+            // Validation: Không cho phép tự khóa chính mình nếu là Admin (tránh tự sát)
             if (user.Role == "Admin" && isLocked) 
-                throw new InvalidOperationException("Không thể khóa tài khoản quản trị viên");
+                throw new Exception("Không thể khóa tài khoản Quản trị viên (Admin)");
 
             user.IsLocked = isLocked;
             await _context.SaveChangesAsync();
         }
 
+        // Cập nhật quyền (Role) cho User
         public async Task UpdateRoleAsync(int userId, string role)
         {
             var user = await _context.Users.FindAsync(userId);
-            if (user == null) throw new KeyNotFoundException("Không tìm thấy người dùng");
+            if (user == null) throw new Exception("Không tìm thấy người dùng");
             
+            // Validation: Role phải hợp lệ (Admin, Staff, Customer)
+            var validRoles = new[] { "Admin", "Staff", "Customer" };
+            if (!validRoles.Contains(role)) throw new Exception("Quyền hạn không hợp lệ");
+
             user.Role = role;
             await _context.SaveChangesAsync();
         }
 
-        // --- QUẢN LÝ ĐỊA CHỈ (DÀNH CHO CLIENT) ---
+        // 2. CLIENT ADDRESS MANAGEMENT (QUẢN LÝ ĐỊA CHỈ)
+        // ==========================================
+
+        // Lấy danh sách địa chỉ của User đang đăng nhập
         public async Task<List<AddressResponseDto>> GetMyAddressesAsync(int userId)
         {
             return await _context.UserAddresses
                 .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.IsDefault) // Địa chỉ mặc định lên đầu
+                .ThenByDescending(a => a.Id)
                 .Select(a => new AddressResponseDto
                 {
                     Id = a.Id,
@@ -84,13 +112,24 @@ namespace webnhom5.Services
                 }).ToListAsync();
         }
 
+        // Thêm địa chỉ mới (Có logic xử lý IsDefault bằng Transaction)
         public async Task<UserAddress> AddAddressAsync(int userId, CreateAddressDto dto)
         {
+            // Bắt đầu Transaction để đảm bảo tính toàn vẹn dữ liệu
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Logic xử lý địa chỉ mặc định
-                if (dto.IsDefault)
+                // Kiểm tra xem User đã có địa chỉ nào chưa
+                bool hasAddress = await _context.UserAddresses.AnyAsync(a => a.UserId == userId);
+
+                // Logic IsDefault:
+                // 1. Nếu đây là địa chỉ đầu tiên -> Bắt buộc là Default
+                // 2. Nếu người dùng chọn IsDefault = true -> Reset tất cả cái cũ về false
+                if (!hasAddress)
+                {
+                    dto.IsDefault = true;
+                }
+                else if (dto.IsDefault)
                 {
                     var oldDefaults = await _context.UserAddresses
                         .Where(a => a.UserId == userId && a.IsDefault == true)
@@ -100,16 +139,12 @@ namespace webnhom5.Services
                     {
                         addr.IsDefault = false;
                     }
-                }
-                else
-                {
-                    // Nếu chưa có địa chỉ nào, địa chỉ này bắt buộc là mặc định
-                    bool hasAddress = await _context.UserAddresses.AnyAsync(a => a.UserId == userId);
-                    if (!hasAddress) dto.IsDefault = true;
+                    _context.UserAddresses.UpdateRange(oldDefaults);
+                    await _context.SaveChangesAsync();
                 }
 
-                // 2. Tạo Model mới (Sửa tên từ UserAddresses thành UserAddress)
-                var newAddress = new UserAddress
+                // Tạo địa chỉ mới
+                var newAddress = new UserAddress // Lưu ý: Tên class là UserAddress (số ít) do Scaffold
                 {
                     UserId = userId,
                     ContactName = dto.ContactName,
@@ -124,31 +159,35 @@ namespace webnhom5.Services
                 _context.UserAddresses.Add(newAddress);
                 await _context.SaveChangesAsync();
 
+                // Commit Transaction: Lưu thay đổi vào DB
                 await transaction.CommitAsync();
                 return newAddress;
             }
             catch
             {
+                // Nếu có lỗi -> Rollback (Hủy bỏ mọi thay đổi)
                 await transaction.RollbackAsync();
                 throw;
             }
         }
 
+        // Xóa địa chỉ
         public async Task DeleteAddressAsync(int userId, int addressId)
         {
             var addr = await _context.UserAddresses
                 .FirstOrDefaultAsync(a => a.Id == addressId && a.UserId == userId);
                 
-            if (addr == null) return;
-
-            // Nếu xóa địa chỉ đang là mặc định, hãy cảnh báo hoặc set địa chỉ khác làm mặc định
-            if (addr.IsDefault == true)
+            if (addr != null)
             {
-                // Tùy chọn: Tìm một địa chỉ khác của user này để set làm mặc định
+                // Nếu xóa địa chỉ mặc định -> Cần cảnh báo hoặc tự động chọn cái khác (Optional)
+                // Ở đây xóa thẳng
+                _context.UserAddresses.Remove(addr);
+                await _context.SaveChangesAsync();
             }
-
-            _context.UserAddresses.Remove(addr);
-            await _context.SaveChangesAsync();
+            else
+            {
+                throw new Exception("Không tìm thấy địa chỉ hoặc bạn không có quyền xóa");
+            }
         }
     }
 }
