@@ -12,6 +12,8 @@ namespace webnhom5.Services
         // Thêm tham số search và phân trang (pagination) là rất tốt cho hiệu năng
         Task<List<UserResponseDto>> GetAllUsersAsync(string? search, int page, int pageSize);
         
+        // ---> BỔ SUNG DÒNG NÀY:
+        Task<UserResponseDto?> GetUserByIdAsync(int id);
         Task LockUserAsync(int userId, bool isLocked);
         
         Task UpdateRoleAsync(int userId, string role);
