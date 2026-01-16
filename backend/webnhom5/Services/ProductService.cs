@@ -45,6 +45,14 @@ namespace webnhom5.Services
 
         public async Task<Category> CreateCategoryAsync(CreateCategoryDto dto)
         {
+            if (dto.ParentId.HasValue && dto.ParentId.Value <= 0) dto.ParentId = null;
+
+            if (dto.ParentId.HasValue)
+            {
+                bool parentExists = await _context.Categories.AnyAsync(c => c.Id == dto.ParentId.Value);
+                if (!parentExists) throw new Exception($"Danh mục cha với ID {dto.ParentId} không tồn tại.");
+            }
+
             var cat = new Category
             {
                 Name = dto.Name,
@@ -54,7 +62,7 @@ namespace webnhom5.Services
             };
             _context.Categories.Add(cat);
             await _context.SaveChangesAsync();
-            return cat ;
+            return cat;
         }
 
         public async Task DeleteCategoryAsync(int id)
@@ -78,7 +86,8 @@ namespace webnhom5.Services
         {
             return await _context.Products
                 .Include(p => p.Category)
-                .Where(p => p.IsActive == true) // Chỉ lấy sản phẩm active
+                .Include(p => p.ProductImages) 
+                .Where(p => p.IsActive == true)
                 .Select(p => new ProductResponseDto
                 {
                     Id = p.Id,
@@ -86,8 +95,11 @@ namespace webnhom5.Services
                     Slug = p.Slug,
                     Price = p.Price,
                     Thumbnail = p.Thumbnail,
+                    CategoryId = p.CategoryId, 
                     CategoryName = p.Category.Name,
-                    IsActive = p.IsActive
+                    
+                    IsActive = p.IsActive,
+                    ImageUrls = p.ProductImages.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList() 
                 }).ToListAsync();
         }
 
@@ -110,8 +122,11 @@ namespace webnhom5.Services
                 Price = product.Price,
                 Description = product.Description,
                 Thumbnail = product.Thumbnail,
+                
+                // Đảm bảo chi tiết cũng có ID
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category.Name,
+                
                 IsActive = product.IsActive,
                 ImageUrls = product.ProductImages.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList(),
                 Variants = product.ProductVariants.Select(v => new VariantResponseDto
@@ -147,10 +162,11 @@ namespace webnhom5.Services
 
             if (dto.GalleryFiles != null && dto.GalleryFiles.Any())
             {
+                int sort = 1;
                 foreach (var file in dto.GalleryFiles)
                 {
                     string imgPath = await SaveFileAsync(file);
-                    var prodImg = new ProductImage { ProductId = product.Id, ImageUrl = imgPath, SortOrder = 0 };
+                    var prodImg = new ProductImage { ProductId = product.Id, ImageUrl = imgPath, SortOrder = sort++ }; 
                     _context.ProductImages.Add(prodImg);
                 }
                 await _context.SaveChangesAsync();
@@ -164,26 +180,26 @@ namespace webnhom5.Services
             var product = await _context.Products.FindAsync(id);
             if (product == null) throw new Exception("Không tìm thấy sản phẩm");
 
-            // Cập nhật thông tin cơ bản
             product.Name = dto.Name;
             product.Price = dto.Price;
             product.Description = dto.Description;
             product.CategoryId = dto.CategoryId;
             product.IsActive = dto.IsActive;
 
-            // Nếu có ảnh Thumbnail mới -> Thay thế
             if (dto.ThumbnailFile != null)
             {
                 product.Thumbnail = await SaveFileAsync(dto.ThumbnailFile);
             }
 
-            // Nếu có ảnh Gallery mới -> Thêm vào (Không xóa ảnh cũ)
             if (dto.NewGalleryFiles != null && dto.NewGalleryFiles.Any())
             {
+                int currentMaxSort = await _context.ProductImages.Where(p => p.ProductId == id).MaxAsync(p => (int?)p.SortOrder) ?? 0;
+                
                 foreach (var file in dto.NewGalleryFiles)
                 {
+                    currentMaxSort++;
                     string imgPath = await SaveFileAsync(file);
-                    _context.ProductImages.Add(new ProductImage { ProductId = id, ImageUrl = imgPath, SortOrder = 0 });
+                    _context.ProductImages.Add(new ProductImage { ProductId = id, ImageUrl = imgPath, SortOrder = currentMaxSort });
                 }
             }
 
@@ -193,13 +209,11 @@ namespace webnhom5.Services
 
         public async Task DeleteProductAsync(int id)
         {
-            // Xóa cứng hoặc xóa mềm tùy nghiệp vụ. Ở đây dùng xóa cứng theo GenericRepo
             await _productRepo.DeleteAsync(id);
         }
 
         // --- 3. VARIANT (FULL CRUD) ---
         
-        // <--- THÊM HÀM NÀY
         public async Task<VariantResponseDto?> GetVariantByIdAsync(int id)
         {
             var v = await _context.ProductVariants
@@ -221,7 +235,26 @@ namespace webnhom5.Services
                 PriceModifier = v.PriceModifier ?? 0
             };
         }
-        // ---> KẾT THÚC THÊM
+
+        public async Task<List<VariantResponseDto>> GetVariantsByProductIdAsync(int productId)
+        {
+            return await _context.ProductVariants
+                .Include(v => v.Color)
+                .Include(v => v.Size)
+                .Where(v => v.ProductId == productId) // Lọc theo sản phẩm cha
+                .OrderBy(v => v.Color.Name) // Sắp xếp cho dễ nhìn
+                .Select(v => new VariantResponseDto
+                {
+                    Id = v.Id,
+                    ColorId = v.ColorId,
+                    SizeId = v.SizeId,
+                    ColorName = v.Color.Name,
+                    SizeName = v.Size.Name,
+                    Sku = v.Sku,
+                    Quantity = v.Quantity ?? 0,
+                    PriceModifier = v.PriceModifier ?? 0
+                }).ToListAsync();
+        }
 
         public async Task<ProductVariant> CreateVariantAsync(CreateVariantDto dto)
         {
@@ -251,7 +284,6 @@ namespace webnhom5.Services
             var variant = await _context.ProductVariants.FindAsync(id);
             if (variant == null) throw new Exception("Không tìm thấy biến thể");
 
-            // Kiểm tra trùng SKU (trừ chính nó)
             bool skuDuplicate = await _context.ProductVariants.AnyAsync(v => v.Sku == dto.Sku && v.Id != id);
             if (skuDuplicate) throw new Exception($"SKU '{dto.Sku}' đã bị trùng.");
 

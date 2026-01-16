@@ -22,7 +22,15 @@ namespace webnhom5.Services
                 .Include(v => v.Product)
                 .FirstOrDefaultAsync(v => v.Id == dto.ProductVariantId);
 
-            if (variant == null) throw new Exception("Sản phẩm không tồn tại.");
+            if (variant == null) throw new Exception("Sản phẩm (biến thể) không tồn tại.");
+
+            // Kiểm tra xem biến thể này có đúng là của sản phẩm cha gửi lên không
+            if (variant.ProductId != dto.ProductId)
+            {
+                throw new Exception("Dữ liệu không hợp lệ: Biến thể này không thuộc về sản phẩm đã chọn.");
+            }
+            // --------------------------------
+
             if (variant.Quantity < dto.Quantity) throw new Exception($"Kho chỉ còn {variant.Quantity} sản phẩm.");
 
             // B. Check xem đã có trong giỏ chưa
@@ -35,7 +43,6 @@ namespace webnhom5.Services
             }
             else
             {
-                // SỬA: Dùng Class CartItem (Số ít)
                 var cartItem = new CartItem
                 {
                     UserId = userId,
@@ -123,11 +130,11 @@ namespace webnhom5.Services
                     totalAmount += price * (item.Quantity ?? 0);
                 }
 
-                // Bước 3: Tạo Order (Snapshot Address) - SỬA: Dùng Class Order (Số ít)
+                // Bước 3: Tạo Order (Snapshot Address) 
                 var order = new Order
                 {
                     UserId = userId,
-                    OrderCode = "ORD-" + DateTime.Now.Ticks, 
+                    OrderCode = "ORD-" + DateTime.Now.ToString("yyMMddHHmmss"), // Ví dụ: ORD-260116082512 (16 ký tự)
                     OrderDate = DateTime.Now,
                     ShippingName = dto.ShippingName,       
                     ShippingAddress = dto.ShippingAddress, 
@@ -142,7 +149,7 @@ namespace webnhom5.Services
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync(); // Để lấy OrderId
 
-                // Bước 4: Tạo OrderDetails (Snapshot Product Data) - SỬA: Dùng Class OrderDetail (Số ít)
+                // Bước 4: Tạo OrderDetails (Snapshot Product Data) 
                 foreach (var item in cartItems)
                 {
                     decimal price = item.Product.Price + (item.ProductVariant.PriceModifier ?? 0);
@@ -152,7 +159,6 @@ namespace webnhom5.Services
                         ProductVariantId = item.ProductVariantId,
                         Quantity = item.Quantity ?? 0,
                         UnitPrice = price,
-                        // SỬA: Tên thuộc tính PascalCase (bỏ dấu gạch dưới)
                         SnapshotProductName = item.Product.Name, 
                         SnapshotSku = item.ProductVariant.Sku,
                         SnapshotThumbnail = item.Product.Thumbnail
@@ -160,7 +166,7 @@ namespace webnhom5.Services
                     _context.OrderDetails.Add(detail);
                 }
 
-                // Bước 5: Ghi log trạng thái khởi tạo - SỬA: DbSet OrderStatusHistories
+                // Bước 5: Ghi log trạng thái khởi tạo 
                 _context.OrderStatusHistories.Add(new OrderStatusHistory
                 {
                     OrderId = order.Id,
@@ -210,7 +216,6 @@ namespace webnhom5.Services
 
         public async Task<OrderResponseDto?> GetOrderByIdAsync(int id)
         {
-            // SỬA: Include OrderStatusHistories (số nhiều)
             var o = await _context.Orders
                 .Include(x => x.OrderDetails)
                 .Include(x => x.OrderStatusHistories)
@@ -230,7 +235,6 @@ namespace webnhom5.Services
                 FinalAmount = o.FinalAmount,
                 OrderDetails = o.OrderDetails.Select(d => new OrderDetailDto
                 {
-                    // SỬA: Tên thuộc tính PascalCase
                     ProductName = d.SnapshotProductName, 
                     Sku = d.SnapshotSku,
                     Thumbnail = d.SnapshotThumbnail,
@@ -264,7 +268,6 @@ namespace webnhom5.Services
 
             order.Status = newStatus;
             
-            // SỬA: DbSet OrderStatusHistories
             _context.OrderStatusHistories.Add(new OrderStatusHistory
             {
                 OrderId = order.Id,
@@ -285,7 +288,7 @@ namespace webnhom5.Services
             
             var stats = await _context.Orders
                 .Where(o => o.OrderDate >= fromDate && o.Status == 3) // Chỉ tính đơn thành công
-                .GroupBy(o => o.OrderDate.Value.Date) // Sửa: Gom nhóm theo ngày (bỏ giờ phút)
+                .GroupBy(o => o.OrderDate.Value.Date) // Gom nhóm theo ngày (bỏ giờ phút)
                 .Select(g => new RevenueStatisticDto
                 {
                     Date = g.Key.ToString("dd/MM/yyyy"),

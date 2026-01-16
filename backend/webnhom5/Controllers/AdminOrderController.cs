@@ -8,7 +8,7 @@ namespace webnhom5.Controllers
 {
     [Route("api/admin/orders")]
     [ApiController]
-    // [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin,Staff")]
     public class AdminOrderController : ControllerBase
     {
         private readonly IOrderService _orderService;

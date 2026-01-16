@@ -5,21 +5,24 @@ using webnhom5.Services;
 
 namespace webnhom5.Controllers
 {
-    [Route("api/admin/categories")]
+    [Route("api/categories")]
     [ApiController]
-    // [Authorize(Roles = "Admin,Staff")] // Mở ra khi đã có Auth
     public class AdminCategoryController : ControllerBase
     {
         private readonly IProductService _service;
         public AdminCategoryController(IProductService service) => _service = service;
 
+        // Xem cây danh mục: AI CŨNG ĐƯỢC XEM
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetTree()
         {
             return Ok(await _service.GetCategoryTreeAsync());
         }
 
+        // Thêm/Sửa/Xóa: CHỈ ADMIN/STAFF
         [HttpPost]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Create([FromBody] CreateCategoryDto dto)
         {
             var cat = await _service.CreateCategoryAsync(dto);
@@ -27,6 +30,7 @@ namespace webnhom5.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Delete(int id)
         {
             try 

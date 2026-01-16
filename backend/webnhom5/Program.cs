@@ -4,29 +4,26 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using webnhom5.Data;
-using webnhom5.Repositories; 
-using webnhom5.Services;     
+using webnhom5.Repositories;
+using webnhom5.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-// 1. CẤU HÌNH DATABASE & CORE
+
+// Kết nối SQL Server
 builder.Services.AddDbContext<FashionDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Cấu hình AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-// 2. DEPENDENCY INJECTION (ĐĂNG KÝ DỊCH VỤ)
-// A. Repositories
+
 // Đăng ký Generic Repository (Dùng chung cho tất cả bảng)
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-
-// B. Services 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMarketingService, MarketingService>();
 
-// 3. CẤU HÌNH AUTHENTICATION (JWT)
+// CẤU HÌNH AUTHENTICATION (JWT)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,14 +42,22 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
 });
-// 4. CẤU HÌNH SWAGGER & API
-builder.Services.AddControllers();
+
+// CẤU HÌNH SWAGGER & API
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
 builder.Services.AddEndpointsApiExplorer();
 
 // Cấu hình Swagger để hiện nút "Authorize" (Nhập Token)
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Fashion Shop API", Version = "v1" });
+    
+    // Định nghĩa bảo mật Bearer
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Nhập token theo định dạng: Bearer {your_token}",
@@ -61,6 +66,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -86,7 +92,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// 5. CẤU HÌNH PIPELINE (MIDDLEWARE)
+// CẤU HÌNH PIPELINE (MIDDLEWARE)
 
 // Môi trường Dev
 if (app.Environment.IsDevelopment())
@@ -97,7 +103,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-//Cho phép truy cập ảnh trong thư mục wwwroot
+// Cho phép truy cập ảnh trong thư mục wwwroot
 app.UseStaticFiles(); 
 
 app.UseCors("AllowAll");
@@ -107,5 +113,27 @@ app.UseAuthentication(); // 1. Xác thực (Bạn là ai?)
 app.UseAuthorization();  // 2. Phân quyền (Bạn được làm gì?)
 
 app.MapControllers();
+
+// TỰ ĐỘNG CHẠY DATA SEEDING
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<FashionDbContext>();
+        
+        // Gọi hàm Seed từ DbInitializer để nạp dữ liệu mẫu
+        DbInitializer.Seed(context);
+        
+        // Log ra console để biết đã chạy xong
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Da khoi tao du lieu mau (Seeding) thanh cong!");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Loi khi khoi tao du lieu mau (Seeding).");
+    }
+}
 
 app.Run();

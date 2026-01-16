@@ -39,31 +39,33 @@ namespace webnhom5.Controllers
 
         // 3. Khóa hoặc mở khóa tài khoản
         [HttpPut("{id}/lock")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> LockUser(int id, [FromBody] bool isLocked)
         {
-            try 
+            try
             {
                 await _userService.LockUserAsync(id, isLocked);
                 return Ok(new { message = isLocked ? "Đã khóa tài khoản" : "Đã mở khóa" });
             }
-            catch (Exception ex) 
-            { 
-                return BadRequest(new { message = ex.Message }); 
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 
         // 4. Cập nhật quyền (Role)
         [HttpPut("{id}/role")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateRole(int id, [FromBody] UpdateUserRoleDto dto)
         {
-            try 
+            try
             {
                 await _userService.UpdateRoleAsync(id, dto.Role);
                 return Ok(new { message = "Cập nhật quyền thành công" });
             }
-            catch (Exception ex) 
-            { 
-                return BadRequest(new { message = ex.Message }); 
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

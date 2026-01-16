@@ -1,25 +1,25 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using webnhom5.DTOs;
 using webnhom5.Services;
 
 namespace webnhom5.Controllers
 {
-    [Route("api/admin")] 
+    [Route("api/products")] 
     [ApiController]
     public class AdminProductController : ControllerBase
     {
         private readonly IProductService _service;
         public AdminProductController(IProductService service) => _service = service;
 
-        // --- PRODUCT CRUD ---
-        
-        // 1. Lấy danh sách
-        [HttpGet("products")]
+        // KHU VỰC PUBLIC (AI CŨNG XEM ĐƯỢC)
+        [HttpGet]
+        [AllowAnonymous] // <--- Khách không cần login vẫn xem được hàng
         public async Task<IActionResult> GetAll() 
             => Ok(await _service.GetAllProductsAsync());
 
-        // 2. Lấy chi tiết
-        [HttpGet("products/{id}")]
+        [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
             var product = await _service.GetProductByIdAsync(id);
@@ -27,8 +27,35 @@ namespace webnhom5.Controllers
             return Ok(product);
         }
 
-        // 3. Tạo mới (Upload file)
-        [HttpPost("products")]
+        [HttpGet("{productId}/variants")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetVariantsByProduct(int productId)
+        {
+            var variants = await _service.GetVariantsByProductIdAsync(productId);
+            return Ok(variants);
+        }
+
+        [HttpGet("variants/{id}")] // API chi tiết variant
+        [AllowAnonymous]
+        public async Task<IActionResult> GetVariantById(int id)
+        {
+            var variant = await _service.GetVariantByIdAsync(id);
+            if (variant == null) return NotFound(new { message = "Không tìm thấy biến thể" });
+            return Ok(variant);
+        }
+
+        // Master Data cũng cần Public để frontend render bộ lọc
+        [HttpGet("master-data/colors")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetColors() => Ok(await _service.GetColorsAsync());
+
+        [HttpGet("master-data/sizes")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetSizes() => Ok(await _service.GetSizesAsync());
+
+        // KHU VỰC QUẢN TRỊ (CHỈ ADMIN/STAFF)
+        [HttpPost]
+        [Authorize(Roles = "Admin,Staff")] // <--- Chặn khách
         public async Task<IActionResult> CreateProduct([FromForm] CreateProductDto dto)
         {
             try 
@@ -42,8 +69,8 @@ namespace webnhom5.Controllers
             }
         }
 
-        // 4. Cập nhật (Upload file)
-        [HttpPut("products/{id}")]
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> UpdateProduct(int id, [FromForm] UpdateProductDto dto)
         {
             try
@@ -57,26 +84,18 @@ namespace webnhom5.Controllers
             }
         }
 
-        // 5. Xóa
-        [HttpDelete("products/{id}")]
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             await _service.DeleteProductAsync(id);
             return Ok(new { message = "Đã xóa sản phẩm thành công" });
         }
 
-        // --- VARIANTS CRUD ---
+        // --- VARIANTS CRUD (Quản trị) ---
 
-        // 1. Lấy chi tiết biến thể (MỚI THÊM)
-        [HttpGet("product-variants/{id}")]
-        public async Task<IActionResult> GetVariantById(int id)
-        {
-            var variant = await _service.GetVariantByIdAsync(id);
-            if (variant == null) return NotFound(new { message = "Không tìm thấy biến thể" });
-            return Ok(variant);
-        }
-
-        [HttpPost("product-variants")]
+        [HttpPost("variants")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> CreateVariant([FromBody] CreateVariantDto dto)
         {
             try
@@ -90,7 +109,8 @@ namespace webnhom5.Controllers
             }
         }
 
-        [HttpPut("product-variants/{id}")]
+        [HttpPut("variants/{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> UpdateVariant(int id, [FromBody] UpdateVariantDto dto)
         {
             try
@@ -104,7 +124,8 @@ namespace webnhom5.Controllers
             }
         }
 
-        [HttpDelete("product-variants/{id}")]
+        [HttpDelete("variants/{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> DeleteVariant(int id)
         {
             try
@@ -117,12 +138,5 @@ namespace webnhom5.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        // --- MASTER DATA ---
-        [HttpGet("master-data/colors")]
-        public async Task<IActionResult> GetColors() => Ok(await _service.GetColorsAsync());
-
-        [HttpGet("master-data/sizes")]
-        public async Task<IActionResult> GetSizes() => Ok(await _service.GetSizesAsync());
     }
 }
