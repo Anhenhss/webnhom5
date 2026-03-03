@@ -1,11 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Phân quyền: Cả Admin và Staff đều được vào
     if (!authManager.isLoggedIn()) { window.location.href = 'login.html'; return; }
-    // 2. HIỂN THỊ LỜI CHÀO 
-    const roleTitle = currentUserRole === 'Admin' ? "Quản trị viên" : "Nhân viên";
-    const nameElem = document.getElementById('display-admin-name');
-    if (nameElem) {
-        nameElem.innerText = `Xin chào, ${roleTitle} (${userInfo.fullName})`;
+    
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    if (userInfo.role !== 'Admin' && userInfo.role !== 'Staff') {
+        window.location.href = 'index.html'; return;
     }
+
+    const roleTitle = userInfo.role === 'Admin' ? "Quản trị viên" : "Nhân viên";
+    document.getElementById('display-admin-name').innerText = `${roleTitle} (${userInfo.fullName})`;
+
     const avatarElem = document.getElementById('admin-avatar');
     if (avatarElem) {
         // Tự động tạo ảnh đại diện theo tên (UI Avatars)

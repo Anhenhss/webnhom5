@@ -52,7 +52,37 @@ namespace webnhom5.Controllers
         [HttpGet("master-data/sizes")]
         [AllowAnonymous]
         public async Task<IActionResult> GetSizes() => Ok(await _service.GetSizesAsync());
+        
+        [HttpPost("colors")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> AddColor([FromBody] MasterDataDto dto)
+        {
+            try 
+            {
+                // Controller chỉ việc gọi Service và nhận kết quả
+                int newId = await _service.AddColorAsync(dto);
+                return Ok(new { message = "Thêm màu thành công", id = newId });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Lỗi khi thêm màu: " + ex.Message });
+            }
+        }
 
+        [HttpPost("sizes")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> AddSize([FromBody] MasterDataDto dto)
+        {
+            try 
+            {
+                int newId = await _service.AddSizeAsync(dto);
+                return Ok(new { message = "Thêm kích thước thành công", id = newId });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Lỗi khi thêm kích thước: " + ex.Message });
+            }
+        }
         // KHU VỰC QUẢN TRỊ (CHỈ ADMIN/STAFF)
         [HttpPost]
         [Authorize(Roles = "Admin,Staff")] // <--- Chặn khách

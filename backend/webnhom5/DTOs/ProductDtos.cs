@@ -24,8 +24,8 @@ namespace webnhom5.DTOs
         [Required] public decimal Price { get; set; }
         public string? Description { get; set; }
         [Required] public int CategoryId { get; set; }
-        
-        public IFormFile? ThumbnailFile { get; set; } 
+
+        public IFormFile? ThumbnailFile { get; set; }
         public List<IFormFile>? GalleryFiles { get; set; }
     }
 
@@ -59,7 +59,7 @@ namespace webnhom5.DTOs
         public List<VariantResponseDto> Variants { get; set; } = new List<VariantResponseDto>(); // Trả về kèm biến thể
 
         public int SoldCount { get; set; } // Số lượng đã bán (Tính từ OrderDetails)
-    
+
         // Tổng tồn kho: Tính tổng Quantity của tất cả Variants cộng lại
         public int TotalStock => Variants != null ? Variants.Sum(v => v.Quantity) : 0;
     }
@@ -93,5 +93,9 @@ namespace webnhom5.DTOs
         public string Sku { get; set; } = null!;
         public int Quantity { get; set; }
         public decimal PriceModifier { get; set; }
+    }
+    public class MasterDataDto {
+        public string Name { get; set; }
+        public string Code { get; set; }
     }
 }

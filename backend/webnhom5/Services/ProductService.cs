@@ -69,12 +69,12 @@ namespace webnhom5.Services
         {
             bool hasProduct = await _context.Products.AnyAsync(p => p.CategoryId == id);
             if (hasProduct) throw new Exception("Không thể xóa danh mục này vì đang chứa sản phẩm.");
-            
+
             bool hasChild = await _context.Categories.AnyAsync(c => c.ParentId == id);
             if (hasChild) throw new Exception("Cần xóa các danh mục con trước.");
 
             var cat = await _context.Categories.FindAsync(id);
-            if(cat != null) 
+            if (cat != null)
             {
                 _context.Categories.Remove(cat);
                 await _context.SaveChangesAsync();
@@ -86,7 +86,7 @@ namespace webnhom5.Services
         {
             return await _context.Products
                 .Include(p => p.Category)
-                .Include(p => p.ProductImages) 
+                .Include(p => p.ProductImages)
                 .Where(p => p.IsActive == true)
                 .Select(p => new ProductResponseDto
                 {
@@ -95,11 +95,11 @@ namespace webnhom5.Services
                     Slug = p.Slug,
                     Price = p.Price,
                     Thumbnail = p.Thumbnail,
-                    CategoryId = p.CategoryId, 
+                    CategoryId = p.CategoryId,
                     CategoryName = p.Category.Name,
-                    
+
                     IsActive = p.IsActive,
-                    ImageUrls = p.ProductImages.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList() 
+                    ImageUrls = p.ProductImages.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList()
                 }).ToListAsync();
         }
 
@@ -122,11 +122,11 @@ namespace webnhom5.Services
                 Price = product.Price,
                 Description = product.Description,
                 Thumbnail = product.Thumbnail,
-                
+
                 // Đảm bảo chi tiết cũng có ID
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category.Name,
-                
+
                 IsActive = product.IsActive,
                 ImageUrls = product.ProductImages.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList(),
                 Variants = product.ProductVariants.Select(v => new VariantResponseDto
@@ -157,7 +157,7 @@ namespace webnhom5.Services
                 Thumbnail = thumbPath,
                 IsActive = true
             };
-            
+
             await _productRepo.AddAsync(product);
 
             if (dto.GalleryFiles != null && dto.GalleryFiles.Any())
@@ -166,7 +166,7 @@ namespace webnhom5.Services
                 foreach (var file in dto.GalleryFiles)
                 {
                     string imgPath = await SaveFileAsync(file);
-                    var prodImg = new ProductImage { ProductId = product.Id, ImageUrl = imgPath, SortOrder = sort++ }; 
+                    var prodImg = new ProductImage { ProductId = product.Id, ImageUrl = imgPath, SortOrder = sort++ };
                     _context.ProductImages.Add(prodImg);
                 }
                 await _context.SaveChangesAsync();
@@ -194,7 +194,7 @@ namespace webnhom5.Services
             if (dto.NewGalleryFiles != null && dto.NewGalleryFiles.Any())
             {
                 int currentMaxSort = await _context.ProductImages.Where(p => p.ProductId == id).MaxAsync(p => (int?)p.SortOrder) ?? 0;
-                
+
                 foreach (var file in dto.NewGalleryFiles)
                 {
                     currentMaxSort++;
@@ -213,16 +213,16 @@ namespace webnhom5.Services
         }
 
         // --- 3. VARIANT (FULL CRUD) ---
-        
+
         public async Task<VariantResponseDto?> GetVariantByIdAsync(int id)
         {
             var v = await _context.ProductVariants
                 .Include(v => v.Color)
                 .Include(v => v.Size)
                 .FirstOrDefaultAsync(v => v.Id == id);
-                
+
             if (v == null) return null;
-            
+
             return new VariantResponseDto
             {
                 Id = v.Id,
@@ -306,8 +306,32 @@ namespace webnhom5.Services
         }
 
         // --- 4. MASTER DATA ---
-        public async Task<IEnumerable<MasterColor>> GetColorsAsync() => await _context.MasterColors.ToListAsync();
-        public async Task<IEnumerable<MasterSize>> GetSizesAsync() => await _context.MasterSizes.ToListAsync();
+        public async Task<IEnumerable<object>> GetColorsAsync()
+        {
+            var colors = await _context.MasterColors.ToListAsync();
+            
+            return colors.Select(c => new 
+            {
+                id = c.Id,
+                name = c.Name,
+                code = c.HexCode // Map HexCode trong DB ra thành thuộc tính 'code' cho Frontend
+            });
+        }
+
+        // Sửa hàm GetSizesAsync để map Code = Name
+        public async Task<IEnumerable<object>> GetSizesAsync()
+        {
+            var sizes = await _context.MasterSizes.ToListAsync();
+            
+            // Tạo một danh sách object nặc danh trả về cho Frontend
+            // Ép kiểu thuộc tính Code bằng chính giá trị của Name
+            return sizes.Select(s => new 
+            {
+                id = s.Id,
+                name = s.Name,
+                code = s.Name // Gán Code = Name ở đây
+            });
+        }
 
         // --- HELPER ---
         private async Task<string> SaveFileAsync(IFormFile? file)
@@ -325,5 +349,34 @@ namespace webnhom5.Services
         }
 
         private string GenerateSlug(string name) => name.ToLower().Replace(" ", "-").Replace("đ", "d");
+        public async Task<int> AddColorAsync(MasterDataDto dto)
+        {
+            var color = new MasterColor 
+            { 
+                Name = dto.Name, 
+                // đang truyền chữ viết tắt (VD: BLK, WHT) từ Frontend lên
+                // Ta sẽ lưu tạm nó vào cột HexCode của DB
+                HexCode = dto.Code.ToUpper() 
+            };
+            
+            // DbContext DataFirst thường thêm "s" vào sau tên bảng
+            _context.MasterColors.Add(color);
+            await _context.SaveChangesAsync();
+            
+            return color.Id; 
+        }
+
+        public async Task<int> AddSizeAsync(MasterDataDto dto)
+        {
+            var size = new MasterSize 
+            { 
+                Name = dto.Name 
+            };
+            
+            _context.MasterSizes.Add(size);
+            await _context.SaveChangesAsync();
+            
+            return size.Id;
+        }
     }
 }
