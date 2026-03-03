@@ -31,7 +31,7 @@ namespace webnhom5.DTOs
         [Required] public string ShippingName { get; set; } = null!;
         [Required] public string ShippingAddress { get; set; } = null!; // Nên gộp Tỉnh/Huyện/Xã + Đường
         [Required] public string ShippingPhone { get; set; } = null!;
-        [Required] public string PaymentMethod { get; set; } = "COD"; // COD hoặc VNPAY
+        [Required] public string PaymentMethod { get; set; } = "COD"; // COD hoặc VNPAY, MOMO
     }
 
     public class OrderResponseDto

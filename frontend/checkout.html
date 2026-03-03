@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cart.css"> <link rel="stylesheet" href="css/checkout.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="logo-wrapper">
+            <a href="index.html"><img src="image/logo.png" alt="WebNhom5 Logo"></a>
+        </div>
+        <nav class="main-nav">
+            <a href="shop.html">Sản phẩm</a>
+            <a href="profile.html"><i class="ph ph-user"></i> Tài khoản</a>
+            <a href="cart.html"><i class="ph ph-shopping-cart"></i> Giỏ hàng</a>
+        </nav>
+    </header>
+
+    <div class="checkout-progress-wrapper">
+        <div class="checkout-progress">
+            <div class="progress-step completed" onclick="window.location.href='cart.html'" style="cursor: pointer;">
+                <div class="step-icon"><i class="ph-fill ph-check"></i></div>
+                <span class="step-text">Giỏ hàng</span>
+            </div>
+            <div class="progress-line completed-line"></div>
+            <div class="progress-step active">
+                <div class="step-icon"><i class="ph-fill ph-identification-card"></i></div>
+                <span class="step-text">Thông tin đặt hàng</span>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step">
+                <div class="step-icon"><i class="ph ph-check-circle"></i></div>
+                <span class="step-text">Hoàn tất</span>
+            </div>
+        </div>
+    </div>
+
+    <main class="cart-container">
+        <div class="cart-layout">
+            <div class="checkout-form-section">
+                <h2 class="section-title">Thông tin giao hàng</h2>
+                <form id="checkout-form" class="checkout-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="shippingName">Họ và tên người nhận *</label>
+                            <input type="text" id="shippingName" class="form-control" placeholder="Nhập họ và tên" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="shippingPhone">Số điện thoại *</label>
+                            <input type="tel" id="shippingPhone" class="form-control" placeholder="Nhập số điện thoại" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="province">Tỉnh / Thành phố *</label>
+                            <select id="province" class="form-control" required>
+                                <option value="" disabled selected>Đang tải...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="district">Quận / Huyện *</label>
+                            <select id="district" class="form-control" required>
+                                <option value="" disabled selected>Chọn Quận/Huyện</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ward">Phường / Xã *</label>
+                            <select id="ward" class="form-control" required>
+                                <option value="" disabled selected>Chọn Phường/Xã</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="street">Số nhà, tên đường *</label>
+                            <input type="text" id="street" class="form-control" placeholder="VD: 123 Đường ABC..." required>
+                        </div>
+                    </div>
+
+                    <h2 class="section-title" style="margin-top: 40px;">Phương thức thanh toán</h2>
+                    <div class="payment-methods">
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="COD" checked>
+                            <span class="radio-custom"></span>
+                            <div class="payment-info">
+                                <span class="payment-name">Thanh toán khi nhận hàng (COD)</span>
+                                <span class="payment-desc">Trả tiền mặt khi giao hàng.</span>
+                            </div>
+                            <i class="ph ph-money payment-icon"></i>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="VNPAY">
+                            <span class="radio-custom"></span>
+                            <div class="payment-info">
+                                <span class="payment-name">Thanh toán qua VNPAY</span>
+                                <span class="payment-desc">Quét mã QR qua ứng dụng ngân hàng.</span>
+                            </div>
+                            <i class="ph ph-credit-card payment-icon"></i>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="MOMO">
+                            <span class="radio-custom"></span>
+                            <div class="payment-info">
+                                <span class="payment-name">Thanh toán qua Ví MoMo</span>
+                                <span class="payment-desc">Quét mã QR an toàn và tiện lợi.</span>
+                            </div>
+                            <i class="ph-fill ph-wallet payment-icon" style="color: #A50064;"></i>
+                        </label>
+                    </div>
+                </form>
+            </div>
+
+            <div class="cart-summary-section">
+                <div class="summary-box">
+                    <h3>Tổng đơn hàng</h3>
+                    <div class="summary-row">
+                        <span>Tạm tính (<span id="item-count">0</span> sp):</span>
+                        <span id="subtotal-amount">0 ₫</span>
+                    </div>
+                    <div class="summary-row" style="color: var(--color-primary);">
+                        <span>Phí vận chuyển:</span>
+                        <span id="shipping-fee-amount">Chưa tính</span>
+                    </div>
+                    <hr class="summary-divider">
+                    <div class="summary-row total-row">
+                        <span>Tổng thanh toán:</span>
+                        <span id="total-amount">0 ₫</span>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-checkout" onclick="submitOrder()">
+                        Đặt hàng ngay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4>WebNhom5</h4>
+                <p>Nâng tầm phong cách với sự tinh tế và thanh lịch.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Hỗ trợ khách hàng</h4>
+                <ul>
+                    <li><a href="#">Chính sách đổi trả</a></li>
+                    <li><a href="#">Hướng dẫn chọn size</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Liên hệ</h4>
+                <p>Email: hotro@webnhom5.com</p>
+                <p>Hotline: 1900 xxxx</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 WebNhom5. Đồ án môn học Ứng dụng Web.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/checkout.js"></script>
+</body>
+</html>

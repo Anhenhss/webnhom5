@@ -57,6 +57,11 @@ namespace webnhom5.DTOs
         public bool? IsActive { get; set; }
         public List<string> ImageUrls { get; set; } = new List<string>();
         public List<VariantResponseDto> Variants { get; set; } = new List<VariantResponseDto>(); // Trả về kèm biến thể
+
+        public int SoldCount { get; set; } // Số lượng đã bán (Tính từ OrderDetails)
+    
+        // Tổng tồn kho: Tính tổng Quantity của tất cả Variants cộng lại
+        public int TotalStock => Variants != null ? Variants.Sum(v => v.Quantity) : 0;
     }
 
     // --- 3. VARIANT DTOs ---

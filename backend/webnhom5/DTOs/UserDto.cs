@@ -32,7 +32,7 @@ namespace webnhom5.DTOs
 
     public class UpdateUserRoleDto
     {
-        [Required] 
+        [Required]
         [RegularExpression("Admin|Staff|Customer", ErrorMessage = "Role phải là Admin, Staff hoặc Customer")]
         public string Role { get; set; } = null!;
     }
@@ -73,5 +73,11 @@ namespace webnhom5.DTOs
         public decimal DiscountAmount { get; set; }
         public decimal FinalTotal { get; set; }
         public string? AppliedPromotionName { get; set; }
+    }
+        public class CreateAccountDto {
+        public string FullName { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string Password { get; set; } = null!;
+        public string Role { get; set; } = "Staff"; // Mặc định là Staff
     }
 }

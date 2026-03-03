@@ -68,5 +68,27 @@ namespace webnhom5.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+        // tạo tài khoản
+        [HttpPost("create-account")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateAccount([FromBody] CreateAccountDto dto)
+        {
+            try
+            {
+                // Gọi hàm từ Service thay vì gọi trực tiếp Database
+                var result = await _userService.CreateAccountAsync(dto);
+                
+                if (result)
+                {
+                    return Ok(new { message = "Tạo tài khoản thành công!" });
+                }
+                return BadRequest(new { message = "Không thể tạo tài khoản." });
+            }
+            catch (Exception ex)
+            {
+                // Exception từ Service (như email tồn tại) sẽ được bắt ở đây
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

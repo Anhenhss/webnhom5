@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo">
+                <img src="image/logo.png" alt="WebNhom5">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-item active"><i class="ph-fill ph-squares-four"></i> Tổng quan</a>
+                <a href="admin-orders.html" class="nav-item"><i class="ph ph-receipt"></i> Đơn hàng</a>
+                <a href="admin-products.html" class="nav-item"><i class="ph ph-package"></i> Sản phẩm</a>
+                <a href="admin-categories.html" class="nav-item"><i class="ph ph-list-dashes"></i> Danh mục</a>
+                <a href="admin-users.html" class="nav-item"><i class="ph ph-users"></i> Quản trị Hệ thống</a>
+                <a href="admin-marketing.html" class="nav-item"><i class="ph ph-tag"></i> Khuyến mãi</a>
+                <a href="admin-reports.html" class="nav-item"><i class="ph ph-chart-line-up"></i> Báo cáo doanh thu</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="index.html" class="nav-item back-to-store"><i class="ph ph-storefront"></i> Về cửa hàng</a>
+            </div>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <div class="topbar-search">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" placeholder="Tìm kiếm mã đơn hàng...">
+                </div>
+                <div class="topbar-profile">
+                    <button class="icon-btn notification-bell">
+                        <i class="ph-fill ph-bell"></i>
+                        <span class="notify-badge" id="new-order-badge" style="display: none;"></span>
+                    </button>
+                    <div class="profile-info">
+                        <img src="" class="avatar" id="admin-avatar">
+                        <span class="admin-name" id="display-admin-name">Đang tải...</span>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Đăng xuất"><i class="ph ph-sign-out"></i></button>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header-flex">
+                    <h1 class="page-title">Tổng quan hệ thống</h1>
+                    <select id="global-time-filter" class="form-control" onchange="loadDashboardData()">
+                        <option value="day">Hôm nay</option>
+                        <option value="week" selected>Tuần này</option>
+                        <option value="month">Tháng này</option>
+                        <option value="year">Năm nay</option>
+                    </select>
+                </div>
+                
+                <div class="stat-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #27ae60; background-color: #eafaf1;">
+                            <i class="ph-fill ph-money"></i>
+                        </div>
+                        <div class="stat-details">
+                            <p class="stat-label">Doanh thu</p>
+                            <h3 class="stat-value" id="stat-revenue">0 ₫</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: var(--color-primary); background-color: #E6F0F5;">
+                            <i class="ph-fill ph-receipt"></i>
+                        </div>
+                        <div class="stat-details">
+                            <p class="stat-label">Tổng đơn hàng</p>
+                            <h3 class="stat-value" id="stat-orders">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: var(--color-accent-dark); background-color: #F8E6E6;">
+                            <i class="ph-fill ph-users"></i>
+                        </div>
+                        <div class="stat-details">
+                            <p class="stat-label">Tổng khách & Nhân viên</p>
+                            <h3 class="stat-value" id="stat-users">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #f39c12; background-color: #fef5e7;">
+                            <i class="ph-fill ph-globe"></i>
+                        </div>
+                        <div class="stat-details">
+                            <p class="stat-label">Lượt truy cập (Traffic)</p>
+                            <h3 class="stat-value" id="stat-visitors">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-wrapper">
+                        <h2 class="section-subtitle">Biểu đồ doanh thu</h2>
+                        <div class="canvas-container">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="alerts-wrapper">
+                        <h2 class="section-subtitle">Cảnh báo hệ thống</h2>
+                        
+                        <div class="alert-item warning">
+                            <div class="alert-icon"><i class="ph-fill ph-warning-circle"></i></div>
+                            <div class="alert-content">
+                                <h4>Sản phẩm sắp hết hàng</h4>
+                                <p>Có <strong id="alert-low-stock">0</strong> sản phẩm tồn kho dưới 5</p>
+                            </div>
+                            <a href="admin-products.html" class="alert-action">Xem</a>
+                        </div>
+
+                        <div class="alert-item danger">
+                            <div class="alert-icon"><i class="ph-fill ph-clock"></i></div>
+                            <div class="alert-content">
+                                <h4>Đơn hàng chưa xử lý</h4>
+                                <p>Có <strong id="alert-pending-orders">0</strong> đơn hàng đang chờ duyệt</p>
+                            </div>
+                            <a href="admin-orders.html" class="alert-action">Xử lý</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="top-products-wrapper">
+                    <h2 class="section-subtitle">Top sản phẩm bán chạy</h2>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Đã bán</th>
+                                <th>Doanh thu mang lại</th>
+                                <th>Trạng thái kho</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-products-body">
+                            <tr><td colspan="4" class="text-center">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/admin-dashboard.js"></script>
+</body>
+</html>

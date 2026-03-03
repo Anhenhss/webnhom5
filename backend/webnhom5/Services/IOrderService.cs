@@ -19,8 +19,9 @@ namespace webnhom5.Services
         Task<List<OrderResponseDto>> GetOrdersAsync(int? status, DateTime? fromDate, DateTime? toDate);
         Task<OrderResponseDto?> GetOrderByIdAsync(int id);
         Task UpdateOrderStatusAsync(int orderId, int newStatus, string? note, string updatedBy);
-        
+
         // --- STATISTICS ---
         Task<List<RevenueStatisticDto>> GetDailyRevenueAsync(int days);
+        Task<List<OrderResponseDto>> GetMyOrdersAsync(int userId);
     }
 }

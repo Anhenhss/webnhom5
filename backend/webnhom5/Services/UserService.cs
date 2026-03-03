@@ -66,9 +66,9 @@ namespace webnhom5.Services
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null) throw new Exception("Không tìm thấy người dùng");
-            
+
             // Validation: Không cho phép tự khóa chính mình nếu là Admin (tránh tự sát)
-            if (user.Role == "Admin" && isLocked) 
+            if (user.Role == "Admin" && isLocked)
                 throw new Exception("Không thể khóa tài khoản Quản trị viên (Admin)");
 
             user.IsLocked = isLocked;
@@ -80,7 +80,7 @@ namespace webnhom5.Services
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null) throw new Exception("Không tìm thấy người dùng");
-            
+
             // Validation: Role phải hợp lệ (Admin, Staff, Customer)
             var validRoles = new[] { "Admin", "Staff", "Customer" };
             if (!validRoles.Contains(role)) throw new Exception("Quyền hạn không hợp lệ");
@@ -134,7 +134,7 @@ namespace webnhom5.Services
                     var oldDefaults = await _context.UserAddresses
                         .Where(a => a.UserId == userId && a.IsDefault == true)
                         .ToListAsync();
-                    
+
                     foreach (var addr in oldDefaults)
                     {
                         addr.IsDefault = false;
@@ -176,7 +176,7 @@ namespace webnhom5.Services
         {
             var addr = await _context.UserAddresses
                 .FirstOrDefaultAsync(a => a.Id == addressId && a.UserId == userId);
-                
+
             if (addr != null)
             {
                 // Nếu xóa địa chỉ mặc định -> Cần cảnh báo hoặc tự động chọn cái khác (Optional)
@@ -188,6 +188,26 @@ namespace webnhom5.Services
             {
                 throw new Exception("Không tìm thấy địa chỉ hoặc bạn không có quyền xóa");
             }
+        }
+        public async Task<bool> CreateAccountAsync(CreateAccountDto dto)
+        {
+            // Kiểm tra email tồn tại
+            var existing = await _context.Users.AnyAsync(u => u.Email == dto.Email);
+            if (existing) throw new Exception("Email này đã được sử dụng.");
+
+            var user = new User
+            {
+                FullName = dto.FullName,
+                Email = dto.Email,
+                // Lưu ý: Đảm bảo đã cài thư viện BCrypt.Net-Next qua NuGet
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password), 
+                Role = dto.Role,
+                CreatedAt = DateTime.Now,
+                IsLocked = false
+            };
+
+            _context.Users.Add(user);
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

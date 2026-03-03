@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý đơn hàng | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo">
+                <img src="image/logo.png" alt="WebNhom5">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Tổng quan</a>
+                <a href="admin-orders.html" class="nav-item active"><i class="ph-fill ph-receipt"></i> Đơn hàng</a>
+                <a href="admin-products.html" class="nav-item"><i class="ph ph-package"></i> Sản phẩm</a>
+                <a href="admin-categories.html" class="nav-item"><i class="ph ph-list-dashes"></i> Danh mục</a>
+                <a href="admin-users.html" class="nav-item"><i class="ph ph-users"></i> Quản trị Hệ thống</a>
+                <a href="admin-marketing.html" class="nav-item"><i class="ph ph-tag"></i> Khuyến mãi</a>
+                <a href="admin-reports.html" class="nav-item"><i class="ph ph-chart-line-up"></i> Báo cáo doanh thu</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="index.html" class="nav-item back-to-store"><i class="ph ph-storefront"></i> Về cửa hàng</a>
+            </div>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <div class="topbar-search">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" id="order-search-input" placeholder="Tìm kiếm theo mã đơn hàng...">
+                </div>
+                <div class="topbar-profile">
+                    <button class="icon-btn notification-bell">
+                        <i class="ph-fill ph-bell"></i>
+                        <span class="notify-badge" id="new-order-badge" style="display: none;"></span>
+                    </button>
+                    <div class="profile-info">
+                        <img src="" class="avatar" id="admin-avatar">
+                        <span class="admin-name" id="display-admin-name">Đang tải...</span>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Đăng xuất"><i class="ph ph-sign-out"></i></button>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header-flex">
+                    <h1 class="page-title">Quản lý Đơn hàng</h1>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-group">
+                        <label>Trạng thái</label>
+                        <select id="filter-status" class="form-control">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="0">Chờ xác nhận</option>
+                            <option value="1">Đã xác nhận</option>
+                            <option value="2">Đang giao</option>
+                            <option value="3">Hoàn thành</option>
+                            <option value="4">Đã hủy</option>
+                            <option value="5">Giao thất bại</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Từ ngày</label>
+                        <input type="date" id="filter-from" class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <label>Đến ngày</label>
+                        <input type="date" id="filter-to" class="form-control">
+                    </div>
+                    <button class="btn btn-primary" onclick="loadOrders()" style="align-self: flex-end;">Lọc kết quả</button>
+                    <button class="btn btn-outline" onclick="resetFilters()" style="align-self: flex-end;"><i class="ph ph-arrows-counter-clockwise"></i></button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Mã Đơn</th>
+                                <th>Ngày đặt</th>
+                                <th>Khách hàng</th>
+                                <th>Thanh toán</th>
+                                <th>Tổng tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody">
+                            <tr><td colspan="7" class="text-center">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="order-modal" style="display: none;">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2>Chi tiết đơn hàng: <span id="modal-order-code" class="text-primary"></span></h2>
+                <button class="btn-close" onclick="closeModal()"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="order-grid">
+                    <div class="order-info-col">
+                        <div class="info-card">
+                            <h3><i class="ph ph-user"></i> Thông tin giao hàng</h3>
+                            <p><strong>Người nhận:</strong> <span id="modal-customer-name"></span></p>
+                            <p><strong>Địa chỉ:</strong> <span id="modal-address"></span></p>
+                            <p><strong>Phương thức:</strong> <span id="modal-payment"></span></p>
+                        </div>
+                        <div class="info-card timeline-card">
+                            <h3><i class="ph ph-clock-counter-clockwise"></i> Lịch sử đơn hàng</h3>
+                            <ul class="order-timeline" id="modal-timeline">
+                                </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="order-items-col">
+                        <div class="info-card">
+                            <h3><i class="ph ph-package"></i> Sản phẩm đã đặt (Snapshot)</h3>
+                            <div class="snapshot-items" id="modal-items">
+                                </div>
+                            <div class="order-total-summary">
+                                <p>Tổng cộng: <strong id="modal-total" class="text-danger"></strong></p>
+                            </div>
+                        </div>
+
+                        <div class="info-card action-card">
+                            <h3><i class="ph ph-arrows-left-right"></i> Xử lý đơn hàng</h3>
+                            <p>Trạng thái hiện tại: <span id="modal-current-status" class="badge"></span></p>
+                            
+                            <div class="action-inputs" id="action-inputs-area">
+                                <textarea id="status-note" class="form-control" placeholder="Ghi chú xử lý (Tùy chọn)..." rows="2"></textarea>
+                                <div class="action-buttons" id="modal-action-buttons">
+                                    </div>
+                            </div>
+                            <p id="action-finished-msg" class="text-muted" style="display: none; margin-top: 10px;">Đơn hàng này đã đóng, không thể thao tác thêm.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/admin-orders.js"></script>
+</body>
+</html>
