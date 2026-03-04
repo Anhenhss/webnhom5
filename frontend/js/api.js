@@ -2,7 +2,7 @@
 // CẤU HÌNH CƠ BẢN
 // ==========================================================================
 // Đổi lại port này theo đúng cổng mà backend ASP.NET Core đang chạy (vd: 5001, 7123...)
-const BASE_URL = 'https://localhost:5195/api'; 
+const BASE_URL = 'http://localhost:5195/api'; 
 
 // ==========================================================================
 // QUẢN LÝ TOKEN (LOCAL STORAGE)
@@ -142,4 +142,42 @@ async function handleRefreshToken() {
     })();
 
     return refreshPromise;
+}
+// ==========================================================================
+// GLOBAL SEARCH LOGIC (TÌM KIẾM TOÀN CỤC TRÊN HEADER)
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('global-search-input');
+    const searchBtn = document.getElementById('global-search-btn');
+
+    if (searchInput) {
+        // 1. Khi người dùng ấn phím Enter
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                executeGlobalSearch(searchInput.value);
+            }
+        });
+    }
+
+    if (searchBtn) {
+        // 2. Khi người dùng click vào icon kính lúp
+        searchBtn.addEventListener('click', () => {
+            if (searchInput) executeGlobalSearch(searchInput.value);
+        });
+    }
+});
+
+function executeGlobalSearch(keyword) {
+    const trimmedKeyword = keyword.trim();
+    if (!trimmedKeyword) return; // Không gõ gì thì không tìm
+
+    // Kiểm tra xem trình duyệt có đang ở trang shop.html không
+    const isShopPage = window.location.pathname.includes('shop.html');
+
+    if (!isShopPage) {
+        // Nếu ĐANG Ở TRANG CHỦ (hoặc trang khác): Chuyển hướng sang Shop kèm theo từ khóa
+        window.location.href = `shop.html?search=${encodeURIComponent(trimmedKeyword)}`;
+    }
+    // Ghi chú: Nếu ĐÃ Ở TRANG SHOP, file shop.js đã tự động xử lý Live Search (gõ tới đâu lọc tới đó), 
+    // nên ta không cần redirect trang ở đây nữa.
 }

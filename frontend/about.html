@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Về Chúng Tôi | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* CSS nội bộ cho trang About */
+        .about-banner {
+            background-color: var(--color-bg-sub);
+            padding: 80px 20px;
+            text-align: center;
+        }
+        .about-banner h1 {
+            font-size: 3rem; color: var(--color-primary); margin-bottom: 15px; font-weight: 800;
+        }
+        .about-banner p {
+            font-size: 1.1rem; color: var(--text-muted); max-width: 600px; margin: 0 auto;
+        }
+        .about-section {
+            max-width: 1200px; margin: 80px auto; padding: 0 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+        }
+        .about-image img {
+            width: 100%; border-radius: 12px; box-shadow: var(--shadow-md);
+        }
+        .about-content h2 {
+            font-size: 2.2rem; color: var(--color-primary); margin-bottom: 20px;
+        }
+        .about-content p {
+            color: var(--text-muted); font-size: 1.05rem; margin-bottom: 20px; line-height: 1.8; text-align: justify;
+        }
+        /* Cột giá trị cốt lõi */
+        .values-section {
+            background-color: var(--color-primary); color: #FFF; padding: 80px 20px; text-align: center;
+        }
+        .values-grid {
+            max-width: 1200px; margin: 50px auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px;
+        }
+        .value-card i { font-size: 4rem; color: var(--color-bg-sub); margin-bottom: 20px; }
+        .value-card h3 { font-size: 1.3rem; margin-bottom: 15px; }
+        .value-card p { color: #CCC; font-size: 0.95rem; }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="logo-wrapper">
+            <img src="image/logo.png" alt="Logo" onerror="this.src='https://ui-avatars.com/api/?name=W5&background=003049&color=fff'">
+            <span class="brand-name">WebNhom5</span>
+        </div>
+        <nav class="main-nav">
+            <a href="index.html">Trang chủ</a>
+            <a href="shop.html">Sản phẩm</a>
+            <a href="about.html" class="active">Về chúng tôi</a>
+        </nav>
+        <div class="header-actions">
+            <div class="search-box">
+                <input type="text" id="global-search-input" placeholder="Tìm kiếm sản phẩm...">
+                <i class="ph ph-magnifying-glass" id="global-search-btn" style="cursor: pointer;"></i>
+            </div>
+            <a href="cart.html" class="icon-link"><i class="ph ph-shopping-bag"></i></a>
+            <a href="login.html" class="icon-link"><i class="ph ph-user"></i></a>
+        </div>
+    </header>
+
+    <main>
+        <div class="about-banner">
+            <h1>Câu Chuyện Của Chúng Tôi</h1>
+            <p>Khởi nguồn từ đam mê cái đẹp, WebNhom5 mang đến định nghĩa mới về sự thanh lịch và tinh tế trong từng thiết kế.</p>
+        </div>
+
+        <div class="about-section">
+            <div class="about-image">
+                <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&q=80&w=1000" alt="Fashion Studio">
+            </div>
+            <div class="about-content">
+                <h2>Định Hình Phong Cách <br><span style="color: var(--color-accent-light)">Modern Luxury</span></h2>
+                <p>Ra đời vào năm 2026, WebNhom5 không chỉ là một thương hiệu thời trang, mà là một phong cách sống. Chúng tôi tin rằng trang phục bạn khoác lên người chính là ngôn ngữ không lời thể hiện khí chất và cá tính riêng biệt.</p>
+                <p>Với sự tỉ mỉ trong việc tuyển chọn chất liệu (Lụa, Tweed, Cotton Premium) và kỹ thuật cắt may sắc sảo, mỗi thiết kế của WebNhom5 đều hướng tới sự hoàn mỹ. Chúng tôi tôn vinh nét đẹp hiện đại, năng động nhưng không đánh mất đi sự sang trọng, quý phái của người phụ nữ.</p>
+                <a href="shop.html" class="btn btn-outline" style="margin-top: 10px;">Khám phá Bộ sưu tập</a>
+            </div>
+        </div>
+
+        <div class="values-section">
+            <h2 style="font-size: 2.5rem;">Giá Trị Cốt Lõi</h2>
+            <div class="values-grid">
+                <div class="value-card">
+                    <i class="ph-light ph-diamond"></i>
+                    <h3>Chất lượng Thượng hạng</h3>
+                    <p>Mọi sản phẩm đều trải qua quy trình kiểm định gắt gao từ khâu chọn vải đến đường kim mũi chỉ cuối cùng.</p>
+                </div>
+                <div class="value-card">
+                    <i class="ph-light ph-star"></i>
+                    <h3>Thiết kế Độc bản</h3>
+                    <p>Bắt kịp xu hướng nhưng vẫn giữ vững DNA thanh lịch, các thiết kế giúp bạn tỏa sáng ở bất kỳ đâu.</p>
+                </div>
+                <div class="value-card">
+                    <i class="ph-light ph-heart"></i>
+                    <h3>Tận tâm Phục vụ</h3>
+                    <p>Trải nghiệm mua sắm của bạn là ưu tiên số 1. Chúng tôi luôn lắng nghe và đồng hành cùng phong cách của bạn.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4>WebNhom5</h4>
+                <p>Nâng tầm phong cách với sự tinh tế và thanh lịch.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Hỗ trợ khách hàng</h4>
+                <ul>
+                    <li><a href="return-policy.html">Chính sách đổi trả</a></li>
+                    <li><a href="size-guide.html">Hướng dẫn chọn size</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Liên hệ</h4>
+                <p>Email: hotro@webnhom5.com</p>
+                <p>Hotline: 1900 xxxx</p>
+            </div>
+        </div>
+        <div class="footer-bottom"><p>&copy; 2026 WebNhom5. Đồ án môn học Ứng dụng Web.</p></div>
+    </footer>
+
+    <script src="js/api.js"></script>
+</body>
+</html>

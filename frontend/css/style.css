@@ -226,3 +226,65 @@
     font-size: 0.9rem;
     color: #ccc;
 }
+/* ================== HEADER BỔ SUNG ================== */
+.site-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 50px;
+    background: var(--color-bg-main);
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary); /* Xanh đậm */
+    letter-spacing: 1px;
+}
+
+.main-nav { display: flex; gap: 30px; }
+.main-nav a { font-weight: 600; text-transform: uppercase; font-size: 0.9rem; }
+.main-nav a.active { color: var(--color-accent-light); border-bottom: 2px solid var(--color-accent-light); }
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Thanh tìm kiếm sống */
+.search-box {
+    display: flex;
+    align-items: center;
+    background: #f4f4f4;
+    border-radius: 30px;
+    padding: 8px 16px;
+    transition: all 0.3s;
+}
+
+.search-box:focus-within {
+    background: #fff;
+    box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    padding-right: 10px;
+    font-family: inherit;
+    width: 200px;
+}
+
+.icon-link { font-size: 1.5rem; color: var(--color-primary); }
+.icon-link:hover { color: var(--color-accent-light); transform: scale(1.1); }

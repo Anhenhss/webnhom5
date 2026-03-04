@@ -122,6 +122,22 @@ namespace webnhom5.Controllers
             return Ok(new { message = "Đã xóa sản phẩm thành công" });
         }
 
+        [HttpPut("{id}/toggle-status")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> ToggleStatus(int id)
+        {
+            try
+            {
+                // Vì em đã tiêm _service, ta sẽ gọi Service xử lý
+                var result = await _service.ToggleProductStatusAsync(id);
+                return Ok(new { message = "Cập nhật trạng thái thành công", isActive = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         // --- VARIANTS CRUD (Quản trị) ---
 
         [HttpPost("variants")]

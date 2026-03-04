@@ -87,7 +87,7 @@ namespace webnhom5.Services
             return await _context.Products
                 .Include(p => p.Category)
                 .Include(p => p.ProductImages)
-                .Where(p => p.IsActive == true)
+                .Include(p => p.ProductVariants) // <--- THÊM DÒNG NÀY (BẮT BUỘC)
                 .Select(p => new ProductResponseDto
                 {
                     Id = p.Id,
@@ -97,12 +97,12 @@ namespace webnhom5.Services
                     Thumbnail = p.Thumbnail,
                     CategoryId = p.CategoryId,
                     CategoryName = p.Category.Name,
-
                     IsActive = p.IsActive,
-                    ImageUrls = p.ProductImages.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList()
-                }).ToListAsync();
+                    // TotalStock ở DTO sẽ tự động tính nhờ có Include ở trên
+                })
+                .OrderByDescending(p => p.Id) // Xếp sp mới lên đầu
+                .ToListAsync();
         }
-
         public async Task<ProductResponseDto?> GetProductByIdAsync(int id)
         {
             var product = await _context.Products
@@ -304,35 +304,62 @@ namespace webnhom5.Services
                 await _context.SaveChangesAsync();
             }
         }
+        public async Task<bool> ToggleProductStatusAsync(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null) throw new Exception("Không tìm thấy sản phẩm");
 
+            product.IsActive = !product.IsActive; // Đổi trạng thái Bật <-> Ẩn
+            await _context.SaveChangesAsync();
+            
+            return product.IsActive ?? false;
+        }
         // --- 4. MASTER DATA ---
+        public async Task<int> AddColorAsync(MasterDataDto dto)
+        {
+            // 1. Kiểm tra trùng lặp Tên màu hoặc Mã Hex
+            bool exists = await _context.MasterColors.AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower() || c.HexCode.ToLower() == dto.HexCode!.ToLower());
+            if (exists) throw new Exception("Tên màu hoặc mã Hex màu này đã tồn tại!");
+
+            var color = new MasterColor 
+            { 
+                Name = dto.Name.Trim(), 
+                HexCode = dto.HexCode!.Trim() // Lưu mã Hex chuẩn (VD: #FF0000)
+            };
+            
+            _context.MasterColors.Add(color);
+            await _context.SaveChangesAsync();
+            return color.Id; 
+        }
+
+        public async Task<int> AddSizeAsync(MasterDataDto dto)
+        {
+            // 1. Kiểm tra trùng lặp Kích thước
+            bool exists = await _context.MasterSizes.AnyAsync(s => s.Name.ToLower() == dto.Name.ToLower());
+            if (exists) throw new Exception("Kích thước này đã tồn tại!");
+
+            var size = new MasterSize 
+            { 
+                Name = dto.Name.Trim() // Lấy chính Name làm giá trị (S, M, 39, 40...)
+            };
+            
+            _context.MasterSizes.Add(size);
+            await _context.SaveChangesAsync();
+            return size.Id;
+        }
+
+        // Chỉnh lại GetColors và GetSizes để trả dữ liệu sạch về Frontend
         public async Task<IEnumerable<object>> GetColorsAsync()
         {
             var colors = await _context.MasterColors.ToListAsync();
-            
-            return colors.Select(c => new 
-            {
-                id = c.Id,
-                name = c.Name,
-                code = c.HexCode // Map HexCode trong DB ra thành thuộc tính 'code' cho Frontend
-            });
+            return colors.Select(c => new { id = c.Id, name = c.Name, hexCode = c.HexCode });
         }
 
-        // Sửa hàm GetSizesAsync để map Code = Name
         public async Task<IEnumerable<object>> GetSizesAsync()
         {
             var sizes = await _context.MasterSizes.ToListAsync();
-            
-            // Tạo một danh sách object nặc danh trả về cho Frontend
-            // Ép kiểu thuộc tính Code bằng chính giá trị của Name
-            return sizes.Select(s => new 
-            {
-                id = s.Id,
-                name = s.Name,
-                code = s.Name // Gán Code = Name ở đây
-            });
+            return sizes.Select(s => new { id = s.Id, name = s.Name }); // Chỉ cần ID và Name
         }
-
         // --- HELPER ---
         private async Task<string> SaveFileAsync(IFormFile? file)
         {
@@ -349,34 +376,6 @@ namespace webnhom5.Services
         }
 
         private string GenerateSlug(string name) => name.ToLower().Replace(" ", "-").Replace("đ", "d");
-        public async Task<int> AddColorAsync(MasterDataDto dto)
-        {
-            var color = new MasterColor 
-            { 
-                Name = dto.Name, 
-                // đang truyền chữ viết tắt (VD: BLK, WHT) từ Frontend lên
-                // Ta sẽ lưu tạm nó vào cột HexCode của DB
-                HexCode = dto.Code.ToUpper() 
-            };
-            
-            // DbContext DataFirst thường thêm "s" vào sau tên bảng
-            _context.MasterColors.Add(color);
-            await _context.SaveChangesAsync();
-            
-            return color.Id; 
-        }
-
-        public async Task<int> AddSizeAsync(MasterDataDto dto)
-        {
-            var size = new MasterSize 
-            { 
-                Name = dto.Name 
-            };
-            
-            _context.MasterSizes.Add(size);
-            await _context.SaveChangesAsync();
-            
-            return size.Id;
-        }
+        
     }
 }

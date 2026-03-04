@@ -94,8 +94,9 @@ namespace webnhom5.DTOs
         public int Quantity { get; set; }
         public decimal PriceModifier { get; set; }
     }
-    public class MasterDataDto {
-        public string Name { get; set; }
-        public string Code { get; set; }
+    public class MasterDataDto
+    {
+        public string Name { get; set; } = null!;
+        public string? HexCode { get; set; } // Dùng cho màu sắc, có thể null đối với Size
     }
 }

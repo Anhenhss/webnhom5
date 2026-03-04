@@ -29,5 +29,6 @@ namespace webnhom5.Services
         Task<IEnumerable<object>> GetSizesAsync();
         Task<int> AddColorAsync(MasterDataDto dto);
         Task<int> AddSizeAsync(MasterDataDto dto);
+        Task<bool> ToggleProductStatusAsync(int id);
     }
 }
