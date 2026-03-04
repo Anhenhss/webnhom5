@@ -1,0 +1,38 @@
+.detail-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; padding: 40px 5%; }
+
+/* Hình ảnh */
+.main-image { width: 100%; height: 600px; background: #f9f9f9; border-radius: 4px; overflow: hidden; position: relative; }
+.main-image img { width: 100%; height: 100%; object-fit: cover; }
+.placeholder-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ccc; font-weight: 700; }
+
+/* Thông tin & Giá */
+.display-title { font-size: 32px; margin-bottom: 15px; color: var(--primary); }
+.current-price { font-size: 28px; color: var(--accent); font-weight: 700; }
+
+/* Option List (Màu/Size) */
+.variant-group { margin: 25px 0; }
+.variant-group label { display: block; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; font-size: 13px; }
+.selection-label { color: var(--accent); font-style: italic; }
+
+.option-list { display: flex; gap: 12px; flex-wrap: wrap; }
+.opt-btn { 
+    padding: 10px 20px; border: 1px solid #ddd; background: white; cursor: pointer;
+    transition: 0.2s; min-width: 60px; text-align: center; border-radius: 2px;
+}
+.opt-btn:hover { border-color: var(--primary); }
+.opt-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
+.opt-btn.disabled { opacity: 0.3; cursor: not-allowed; text-decoration: line-through; pointer-events: none; }
+
+/* Số lượng */
+.qty-controls { display: flex; align-items: center; border: 1px solid #ddd; width: fit-content; }
+.qty-controls button { width: 40px; height: 40px; border: none; background: none; cursor: pointer; font-size: 18px; }
+.qty-controls input { width: 50px; text-align: center; border: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd; outline: none; }
+.stock-status { margin-left: 15px; font-size: 14px; color: #666; }
+
+/* Buttons */
+.btn-main { 
+    flex: 1; padding: 18px; background: var(--primary); color: white; border: none; 
+    font-weight: 700; cursor: pointer; transition: 0.3s; 
+}
+.btn-main:disabled { background: #ccc; cursor: not-allowed; }
+.btn-main:hover:not(:disabled) { background: var(--accent); }

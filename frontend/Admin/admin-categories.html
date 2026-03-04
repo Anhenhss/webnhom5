@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Danh mục | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin-categories.css">
+    <style>
+        /* Tối ưu riêng cho Cấu trúc Cây Danh mục */
+        .category-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
+        .tree-container { background: white; padding: 20px; border-radius: 12px; border: 1px solid #eee; min-height: 500px; }
+        .tree-root { list-style: none; padding-left: 0; }
+        .tree-item { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 15px; background: #fdfdfd; border: 1px solid #f0f0f0;
+            border-radius: 8px; margin-bottom: 8px; transition: 0.2s;
+        }
+        .tree-item:hover { border-color: var(--primary-color); background: #f8f9ff; }
+        .tree-children { margin-left: 30px; border-left: 1px dashed #ccc; padding-left: 15px; }
+        
+        .form-sticky { position: sticky; top: 20px; }
+        .action-btns { display: flex; gap: 8px; }
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; border-radius: 4px; transition: 0.2s; }
+        .btn-edit { color: #003049; }
+        .btn-edit:hover { background: #e6f0ff; }
+        .btn-delete { color: #780000; }
+        .btn-delete:hover { background: #ffe6e6; }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo">
+                <img src="image/logo.png" alt="WebNhom5">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Tổng quan</a>
+                <a href="admin-orders.html" class="nav-item"><i class="ph ph-receipt"></i> Đơn hàng</a>
+                <a href="admin-products.html" class="nav-item"><i class="ph ph-package"></i> Sản phẩm</a>
+                <a href="admin-categories.html" class="nav-item active"><i class="ph-fill ph-list-dashes"></i> Danh mục</a>
+                <a href="admin-users.html" class="nav-item"><i class="ph ph-users"></i> Quản trị Hệ thống</a>
+                <a href="admin-marketing.html" class="nav-item"><i class="ph ph-tag"></i> Khuyến mãi</a>
+                <a href="admin-reports.html" class="nav-item"><i class="ph ph-chart-line-up"></i> Báo cáo doanh thu</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="index.html" class="nav-item back-to-store"><i class="ph ph-storefront"></i> Về cửa hàng</a>
+            </div>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <div class="topbar-search">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" placeholder="Tìm kiếm danh mục...">
+                </div>
+                <div class="topbar-profile">
+                    <button class="icon-btn notification-bell">
+                        <i class="ph-fill ph-bell"></i>
+                        <span class="notify-badge"></span>
+                    </button>
+                    <div class="profile-info">
+                        <img src="" class="avatar" id="admin-avatar">
+                        <span class="admin-name" id="display-admin-name">Đang tải...</span>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Đăng xuất"><i class="ph ph-sign-out"></i></button>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header-flex">
+                    <h1 class="page-title">Quản lý Danh mục</h1>
+                    <button class="btn btn-primary" onclick="resetForm()">
+                        <i class="ph ph-plus"></i> Thêm mới
+                    </button>
+                </div>
+
+                <div class="category-grid">
+                    <div class="tree-container">
+                        <h3 style="margin-bottom: 20px;"><i class="ph ph-tree-structure"></i> Cấu trúc hiện tại</h3>
+                        <ul class="tree-root" id="categories-tree">
+                            <li class="text-center">Đang tải cấu trúc danh mục...</li>
+                        </ul>
+                    </div>
+
+                    <div class="form-sticky">
+                        <div class="info-card">
+                            <h3 id="form-title"><i class="ph ph-note-pencil"></i> Thêm danh mục mới</h3>
+                            <br>
+                            <form id="category-form">
+                                <input type="hidden" id="cat-id">
+                                <div class="form-group">
+                                    <label>Tên danh mục</label>
+                                    <input type="text" id="cat-name" class="form-control" placeholder="Ví dụ: Đầm Maxi" required>
+                                </div>
+                                <br>
+                                <div class="form-group">
+                                    <label>Danh mục cha</label>
+                                    <select id="cat-parent" class="form-control">
+                                        <option value="">-- Là danh mục gốc --</option>
+                                    </select>
+                                    <small class="text-muted">Để trống nếu đây là danh mục chính.</small>
+                                </div>
+                                <br>
+                                <div style="display: flex; gap: 10px;">
+                                    <button type="submit" class="btn btn-primary" style="flex: 1;">LƯU THAY ĐỔI</button>
+                                    <button type="button" class="btn btn-outline" onclick="resetForm()">HỦY</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="info-card" style="margin-top: 20px; background: #f8f9ff; border: none;">
+                            <h4 style="color: #003049;"><i class="ph ph-info"></i> Ghi chú</h4>
+                            <p style="font-size: 0.9em; margin-top: 10px;">
+                                - Danh mục gốc sẽ hiển thị trên menu chính.<br>
+                                - Danh mục con sẽ tự động phân bậc khi khách hàng lọc sản phẩm.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/admin-categories.js"></script>
+</body>
+</html>

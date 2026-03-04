@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết sản phẩm | webnhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/product-detail.css">
+</head>
+<body>
+    <header id="main-header"></header>
+
+    <main class="container detail-wrapper">
+        <div class="product-visual">
+            <div class="main-image">
+                <img id="primary-img" src="" alt="Sản phẩm">
+                <div id="img-placeholder" class="placeholder-text">THÊM ẢNH SẢN PHẨM TẠI ĐÂY</div>
+            </div>
+        </div>
+
+        <div class="product-info-shop">
+            <nav class="breadcrumb">Trang chủ / Cửa hàng / <span id="bread-name">Đầm</span></nav>
+            <h1 id="prod-name" class="display-title">Tên sản phẩm đang tải...</h1>
+            <div class="price-range">
+                <span id="prod-price" class="current-price">0đ</span>
+            </div>
+
+            <hr>
+
+            <div class="selection-area">
+                <div class="variant-group">
+                    <label>Màu sắc: <span id="selected-color" class="selection-label">Chưa chọn</span></label>
+                    <div class="option-list" id="color-options">
+                        </div>
+                </div>
+
+                <div class="variant-group">
+                    <label>Kích thước: <span id="selected-size" class="selection-label">Chưa chọn</span></label>
+                    <div class="option-list" id="size-options">
+                        </div>
+                </div>
+
+                <div class="quantity-selector">
+                    <label>Số lượng:</label>
+                    <div class="qty-controls">
+                        <button onclick="changeQty(-1)">-</button>
+                        <input type="number" id="buy-qty" value="1" min="1">
+                        <button onclick="changeQty(1)">+</button>
+                    </div>
+                    <span id="stock-hint" class="stock-status"></span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="btn-add-cart" class="btn-main" disabled onclick="handleAddToCart()">
+                    <i class="ph-bold ph-shopping-cart"></i> THÊM VÀO GIỎ HÀNG
+                </button>
+                <button class="btn-wishlist"><i class="ph ph-heart"></i></button>
+            </div>
+
+            <div class="product-desc">
+                <h3>Mô tả sản phẩm</h3>
+                <p id="prod-desc">Thông tin chi tiết về chất liệu và form dáng...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/product-detail.js"></script>
+</body>
+</html>

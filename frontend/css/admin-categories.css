@@ -1,0 +1,74 @@
+/* Tùy chỉnh Cây Danh mục */
+.tree-container {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.tree-root li {
+    list-style: none;
+    position: relative;
+    padding-left: 20px;
+}
+
+/* Đường kẻ nối các danh mục con */
+.tree-children {
+    margin-left: 20px;
+    border-left: 1px dashed #cbd5e1;
+    padding-left: 10px;
+}
+
+.tree-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    transition: all 0.2s ease;
+}
+
+.tree-item:hover {
+    background: #f1f5f9;
+    border-color: #003049;
+    transform: translateX(5px);
+}
+
+.tree-item .cat-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.tree-item .cat-info i {
+    color: #669BBC;
+    font-size: 18px;
+}
+
+/* Badge số lượng sản phẩm (nếu Backend có trả về) */
+.product-count {
+    background: #e2e8f0;
+    color: #475569;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-left: 10px;
+}
+
+/* Form Sticky */
+.form-sticky {
+    position: sticky;
+    top: 20px;
+}
+
+.info-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #eee;
+}

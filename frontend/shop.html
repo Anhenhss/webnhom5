@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cửa hàng | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/shop.css">
+</head>
+<body>
+    <header id="main-header"></header>
+
+    <div class="shop-container container">
+        <aside class="shop-sidebar">
+            <div class="filter-section">
+                <h3 class="filter-title">Danh mục</h3>
+                <ul id="category-list" class="filter-list">
+                    </ul>
+            </div>
+
+            <div class="filter-section">
+                <h3 class="filter-title">Màu sắc</h3>
+                <div id="color-filter" class="filter-options">
+                    </div>
+            </div>
+
+            <div class="filter-section">
+                <h3 class="filter-title">Kích thước</h3>
+                <div id="size-filter" class="filter-options">
+                    </div>
+            </div>
+
+            <button class="btn-reset" onclick="resetFilters()">Xóa bộ lọc</button>
+        </aside>
+
+        <main class="shop-content">
+            <div class="shop-toolbar">
+                <p>Hiển thị <span id="product-count">0</span> sản phẩm</p>
+                <select id="sort-select" onchange="loadProducts()">
+                    <option value="newest">Mới nhất</option>
+                    <option value="price-asc">Giá: Thấp đến Cao</option>
+                    <option value="price-desc">Giá: Cao đến Thấp</option>
+                </select>
+            </div>
+
+            <div id="product-grid" class="product-grid">
+                </div>
+
+            <div id="pagination" class="pagination"></div>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/shop.js"></script>
+</body>
+</html>
