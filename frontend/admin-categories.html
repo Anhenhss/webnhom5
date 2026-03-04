@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Danh mục | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/admin-categories.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo"><img src="image/logo.jpg" alt="WebNhom5"></div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Tổng quan</a>
+                <a href="admin-orders.html" class="nav-item"><i class="ph ph-receipt"></i> Đơn hàng</a>
+                <a href="admin-products.html" class="nav-item"><i class="ph ph-package"></i> Sản phẩm</a>
+                <a href="admin-categories.html" class="nav-item active"><i class="ph-fill ph-list-dashes"></i> Danh mục</a>
+                <a href="admin-users.html" class="nav-item"><i class="ph ph-users"></i> Khách hàng</a>
+                <a href="admin-marketing.html" class="nav-item"><i class="ph ph-tag"></i> Khuyến mãi</a>
+            </nav>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <div class="topbar-search">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" placeholder="Tìm danh mục...">
+                </div>
+                <div class="topbar-profile">
+                    <div class="profile-info">
+                        <img src="" class="avatar" id="admin-avatar">
+                        <span class="admin-name" id="display-admin-name">Admin</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header-flex">
+                    <h1 class="page-title">Cấu trúc Danh mục Sản phẩm</h1>
+                </div>
+
+                <div class="category-grid">
+                    <div class="category-card tree-card">
+                        <div class="card-header">
+                            <h3><i class="ph-fill ph-tree-structure"></i> Cây Danh mục</h3>
+                            <button class="btn btn-outline btn-sm" onclick="resetForm()">
+                                <i class="ph ph-arrow-counter-clockwise"></i> Làm mới
+                            </button>
+                        </div>
+                        <div class="tree-container" id="category-tree">
+                            <p class="text-center text-muted" style="padding: 20px;">Đang tải cấu trúc...</p>
+                        </div>
+                    </div>
+
+                    <div class="category-card form-card">
+                        <div class="card-header">
+                            <h3 id="form-title"><i class="ph-fill ph-plus-circle"></i> Thêm Danh mục</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="category-form" onsubmit="saveCategory(event)">
+                                <div class="form-group">
+                                    <label>Tên danh mục *</label>
+                                    <input type="text" id="cat-name" class="form-control" required placeholder="VD: Áo Sơ mi Nữ">
+                                </div>
+                                <div class="form-group">
+                                    <label>Danh mục cha</label>
+                                    <select id="cat-parent" class="form-control">
+                                        <option value="">-- Là danh mục gốc (Root) --</option>
+                                        </select>
+                                    <small class="text-muted" style="margin-top: 6px; display: block;">
+                                        Chọn "Root" nếu đây là danh mục cấp 1 lớn nhất.
+                                    </small>
+                                </div>
+                                
+                                <div class="form-actions" style="margin-top: 30px; text-align: right;">
+                                    <button type="submit" class="btn btn-primary" id="btn-save" style="width: 100%;">
+                                        Lưu Danh Mục
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/admin-categories.js"></script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+
+/* ================== LAYOUT SHOP ================== */
+.shop-container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
+
+/* Tiêu đề trang */
+.page-header { text-align: center; margin-bottom: 50px; }
+.page-title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    position: relative;
+    display: inline-block;
+}
+.page-title::after {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 4px;
+    background: var(--color-accent-light);
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+.page-subtitle { color: var(--text-muted); margin-top: 15px; font-size: 1.1rem; }
+
+.shop-layout { display: grid; grid-template-columns: 260px 1fr; gap: 60px; align-items: start; }
+
+/* ================== SIDEBAR ================== */
+.filter-group { margin-bottom: 35px; }
+.filter-group h3 { font-size: 1.1rem; color: var(--color-primary); margin-bottom: 15px; font-weight: 700; text-transform: uppercase; }
+
+.filter-list li {
+    padding: 8px 0;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: 0.3s;
+    border-bottom: 1px dashed #eee;
+}
+.filter-list li:hover, .filter-list li.active {
+    color: var(--color-accent-light);
+    font-weight: 700;
+    padding-left: 10px;
+}
+
+/* Kích thước (Dạng Pill hiện đại) */
+.size-filter-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.size-box {
+    width: 45px; height: 45px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+}
+.size-box:hover, .size-box.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Màu sắc */
+.color-filter-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+.color-swatch {
+    width: 35px; height: 35px;
+    border-radius: 50%; cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: 0.3s;
+    border: 2px solid transparent;
+}
+.color-swatch:hover, .color-swatch.active { transform: scale(1.2); border-color: var(--color-primary); }
+
+.btn-clear-filter {
+    width: 100%; padding: 12px; background: #f8f9fa; border: 1px solid #ddd;
+    border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;
+}
+.btn-clear-filter:hover { background: var(--color-accent-dark); color: #fff; border-color: var(--color-accent-dark); }
+
+/* ================== SẢN PHẨM ================== */
+.shop-topbar { display: flex; justify-content: space-between; margin-bottom: 30px; align-items: center; }
+.sort-select { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-family: inherit; outline: none; cursor: pointer; }
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 30px;
+}
+
+/* CARD TRẺ TRUNG - NĂNG ĐỘNG */
+.product-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Hiệu ứng nảy nhẹ */
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.product-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 48, 73, 0.15);
+    border-color: #eee;
+}
+
+.product-image {
+    width: 100%;
+    aspect-ratio: 3/4;
+    overflow: hidden;
+    position: relative;
+}
+
+.product-image img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.6s ease;
+}
+
+.product-card:hover .product-image img {
+    transform: scale(1.1);
+}
+
+.product-info { padding: 20px; text-align: center; }
+.product-brand { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; }
+.product-name { font-size: 1.15rem; color: var(--color-primary); margin: 8px 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.product-price { font-size: 1.25rem; color: var(--color-accent-dark); font-weight: 800; }
+
+/* ================== PHÂN TRANG ================== */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 50px;
+}
+
+.page-btn {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid #ddd;
+    border-radius: 50%; /* Nút tròn hiện đại */
+    background: #fff;
+    font-weight: 600; cursor: pointer; transition: 0.3s;
+}
+
+.page-btn:hover { background: var(--color-bg-sub); color: var(--color-primary); }
+.page-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ================== THIẾT KẾ DANH MỤC PHÂN CẤP (CHA/CON) ================== */
+.nested-categories {
+    margin-top: 10px;
+}
+/* Style cho Category Cha */
+.nested-categories > li.cat-parent {
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-top: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #EEE;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+.nested-categories > li.cat-parent:hover, 
+.nested-categories > li.cat-parent.active {
+    color: var(--color-accent-light);
+}
+
+/* Style cho Category Con (Thụt lề vào) */
+.cat-children-list {
+    padding-left: 15px;
+    border-left: 2px solid #F0F0F0;
+    margin-top: 8px;
+    margin-bottom: 15px;
+}
+.cat-children-list li {
+    font-weight: 400;
+    font-size: 0.95rem;
+    padding: 6px 0;
+    border-bottom: none; /* Xóa gạch chân của con */
+}
+.cat-children-list li:hover, 
+.cat-children-list li.active {
+    font-weight: 600;
+    color: var(--color-accent-light);
+    transform: translateX(5px);
+}
+
+/* ================== THIẾT KẾ BỘ LỌC GIÁ ================== */
+.price-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.price-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.price-inputs input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #DDD;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: 0.3s;
+}
+.price-inputs input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(0, 48, 73, 0.1);
+}
+.btn-price-apply {
+    background: var(--color-primary);
+    color: #FFF;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+}
+.btn-price-apply:hover {
+    background: var(--color-accent-dark);
+}
+.quick-price-list { margin-top: 15px; }

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết sản phẩm | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/product-detail.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="logo-wrapper">
+            <img src="image/logo.png" alt="Logo" onerror="this.src='https://ui-avatars.com/api/?name=W5&background=003049&color=fff'">
+            <span class="brand-name">WebNhom5</span>
+        </div>
+        
+        <nav class="main-nav">
+            <a href="index.html">Trang chủ</a>
+            <a href="shop.html" class="active">Sản phẩm</a>
+            <a href="about.html">Về chúng tôi</a>
+        </nav>
+
+        <div class="header-actions">
+            <div class="search-box">
+                <input type="text" id="global-search-input" placeholder="Tìm kiếm sản phẩm...">
+                <i class="ph ph-magnifying-glass" id="global-search-btn" style="cursor: pointer;"></i>
+            </div>
+            <a href="cart.html" class="icon-link"><i class="ph ph-shopping-bag"></i></a>
+            <a href="login.html" class="icon-link"><i class="ph ph-user"></i></a>
+        </div>
+    </header>
+
+    <main class="pd-container">
+        <div class="breadcrumb" id="breadcrumb">
+            <a href="index.html">Trang chủ</a> / 
+            <a href="shop.html">Sản phẩm</a> / 
+            <span id="bc-category">Đang tải...</span> / 
+            <span id="bc-name" class="current">Đang tải...</span>
+        </div>
+
+        <div class="pd-layout">
+            <div class="pd-gallery">
+                <div class="main-image-box">
+                    <img id="main-image" src="image/placeholder.jpg" alt="Ảnh sản phẩm gốc">
+                </div>
+                <div class="thumbnail-list" id="thumbnail-list">
+                    </div>
+            </div>
+
+            <div class="pd-info">
+                <h1 class="pd-title" id="pd-name">Đang tải tên sản phẩm...</h1>
+                <div class="pd-price" id="pd-price">0₫</div>
+                
+                <div class="divider"></div>
+
+                <div class="variant-section" id="section-color" style="display: none;">
+                    <h4 class="variant-title">Màu sắc: <span id="selected-color-name" class="selected-label">Chưa chọn</span></h4>
+                    <div class="variant-grid" id="color-grid"></div>
+                </div>
+
+                <div class="variant-section" id="section-size" style="display: none;">
+                    <h4 class="variant-title">Kích thước: <span id="selected-size-name" class="selected-label">Chưa chọn</span></h4>
+                    <div class="variant-grid" id="size-grid"></div>
+                    <a href="#" class="size-guide-link">Hướng dẫn chọn size</a>
+                </div>
+
+                <div class="stock-status" id="stock-status">
+                    Vui lòng chọn phân loại hàng để xem tồn kho
+                </div>
+
+                <div class="action-section">
+                    <div class="quantity-selector">
+                        <button onclick="changeQuantity(-1)">-</button>
+                        <input type="number" id="qty-input" value="1" min="1" readonly>
+                        <button onclick="changeQuantity(1)">+</button>
+                    </div>
+                    <button class="btn btn-add-cart" id="btn-add-cart" onclick="addToCart()" disabled>
+                        <i class="ph ph-shopping-cart"></i> THÊM VÀO GIỎ HÀNG
+                    </button>
+                </div>
+                
+                <div class="trust-badges">
+                    <div class="badge-item"><i class="ph ph-truck"></i> Giao hàng miễn phí toàn quốc</div>
+                    <div class="badge-item"><i class="ph ph-arrow-u-down-left"></i> Đổi trả dễ dàng trong 7 ngày</div>
+                    <div class="badge-item"><i class="ph ph-shield-check"></i> Cam kết sản phẩm chính hãng</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pd-full-section">
+            <h2 class="section-title">MÔ TẢ SẢN PHẨM</h2>
+            <div class="pd-desc-content" id="pd-desc">
+                Mô tả sản phẩm đang được cập nhật...
+            </div>
+        </div>
+
+        <div class="pd-full-section">
+            <h2 class="section-title">CÓ THỂ BẠN SẼ THÍCH</h2>
+            <div class="product-grid" id="related-product-grid">
+                </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4>WebNhom5</h4>
+                <p>Nâng tầm phong cách với sự tinh tế và thanh lịch.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Hỗ trợ khách hàng</h4>
+                <ul>
+                    <li><a href="return-policy.html">Chính sách đổi trả</a></li>
+                    <li><a href="size-guide.html">Hướng dẫn chọn size</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Liên hệ</h4>
+                <p>Email: hotro@webnhom5.com</p>
+                <p>Hotline: 1900 xxxx</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 WebNhom5. Đồ án môn học Ứng dụng Web.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/product-detail.js"></script>
+</body>
+</html>
