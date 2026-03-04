@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gia nhập WebNhom5</title>
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        /* CSS NÀY CHỈ CHẠY RIÊNG CHO TRANG NÀY */
+        :root {
+            --navy-dark: #003049;
+            --light-blue-bg: #E0F7FA; /* MÀU NỀN XANH NHẠT MỚI */
+            --white-card: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--light-blue-bg); /* Đổi sang nền xanh nhạt */
+        }
+
+        .reg-full-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .reg-box {
+            background: var(--white-card); /* Card trắng cho sạch sẽ */
+            width: 100%;
+            max-width: 480px;
+            padding: 50px 40px;
+            box-shadow: 0 15px 35px rgba(0, 48, 73, 0.1); /* Đổ bóng nhẹ màu Navy */
+            border-radius: 4px;
+            /* ĐÃ BỎ VẠT ĐỎ TRÊN ĐẦU (border-top) */
+            position: relative;
+        }
+
+        .reg-box h1 {
+            color: var(--navy-dark);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+
+        .reg-group {
+            margin-bottom: 22px;
+        }
+
+        .reg-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--navy-dark);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+
+        .reg-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(0, 48, 73, 0.15);
+            background: #fff;
+            font-size: 15px;
+            color: var(--navy-dark);
+            box-sizing: border-box;
+            transition: 0.3s;
+        }
+
+        .reg-group input:focus {
+            outline: none;
+            border-color: var(--navy-dark);
+            box-shadow: 0 0 0 3px rgba(0, 48, 73, 0.05);
+        }
+
+        .reg-btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: var(--navy-dark);
+            color: #fff;
+            border: none;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s ease;
+        }
+
+        .reg-btn-submit:hover {
+            background: #00466b; /* Màu navy sáng hơn một chút khi hover */
+            transform: translateY(-1px);
+        }
+
+        .reg-footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 13px;
+            color: var(--navy-dark);
+        }
+
+        .reg-footer a {
+            color: var(--navy-dark);
+            font-weight: 700;
+            text-decoration: none;
+            border-bottom: 1.5px solid var(--navy-dark);
+            padding-bottom: 2px;
+        }
+
+        .reg-footer a:hover {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div id="toast-container"></div>
+
+    <div class="reg-full-container">
+        <div class="reg-box">
+            <h1>Register</h1>
+            
+            <form id="registerForm">
+                <div class="reg-group">
+                    <label>Họ và Tên</label>
+                    <input type="text" id="fullName" placeholder="NGUYỄN VĂN A" required>
+                </div>
+
+                <div class="reg-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" placeholder="NAME@EMAIL.COM" required>
+                </div>
+
+                <div class="reg-group">
+                    <label>Mật khẩu</label>
+                    <input type="password" id="password" required>
+                </div>
+
+                <div class="reg-group">
+                    <label>Xác nhận mật khẩu</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+
+                <button type="submit" class="reg-btn-submit">Hoàn tất đăng ký</button>
+            </form>
+
+            <div class="reg-footer">
+                Bạn đã là thành viên? <a href="login.html">ĐĂNG NHẬP</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        document.getElementById('registerForm').onsubmit = (e) => {
+            e.preventDefault();
+            const pass = document.getElementById('password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            
+            if(pass !== confirm) {
+                alert("Mật khẩu xác nhận không khớp!");
+                return;
+            }
+            alert("Đăng ký thành công!");
+        };
+    </script>
+</body>
+</html>

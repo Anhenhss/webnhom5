@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập | WebNhom5</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div id="toast-container"></div>
+    <div class="auth-wrapper">
+        <div class="auth-image-side" style="background: url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop');">
+            <div class="auth-image-content">
+                <h2 style="font-size: 3rem; font-weight: 300;">Welcome <br><b>Back</b></h2>
+            </div>
+        </div>
+        <div class="auth-form-side">
+            <div class="auth-container">
+                <div style="margin-bottom: 2.5rem; text-align: center;">
+                    <h1 style="font-size: 2.2rem; letter-spacing: 4px; color: var(--color-primary);">WEBNHOM5</h1>
+                    <p style="font-style: italic; color: var(--text-muted);">Elegance in every stitch</p>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="email" class="input-control" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" class="input-control" required>
+                            <i class="ph ph-eye-slash toggle-password" onclick="togglePass('password', this)"></i>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Sign In</button>
+                </form>
+                <div style="text-align: center; margin: 2rem 0; color: #eee; border-bottom: 1px solid #eee; line-height: 0.1em;">
+                    <span style="background:#fff; padding:0 10px; color: #ccc; font-size: 0.7rem;">OR</span>
+                </div>
+                <div id="g_id_onload" data-client_id="YOUR_ID" data-callback="handleGoogle"></div>
+                <div class="g_id_signin" data-type="standard" data-width="420"></div>
+                <p style="text-align: center; margin-top: 2rem; font-size: 0.85rem;">
+                    New member? <a href="register.html" style="color: var(--color-accent-dark); font-weight: 700;">Create Account</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script>
+        function togglePass(id, icon) {
+            const input = document.getElementById(id);
+            input.type = input.type === 'password' ? 'text' : 'password';
+            icon.classList.toggle('ph-eye'); icon.classList.toggle('ph-eye-slash');
+        }
+    </script>
+</body>
+</html>
