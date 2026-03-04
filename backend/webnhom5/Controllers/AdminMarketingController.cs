@@ -18,6 +18,7 @@ namespace webnhom5.Controllers
         }
 
         [HttpGet("promotions")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllPromotions()
         {
             return Ok(await _marketingService.GetAllPromotionsAsync());

@@ -43,6 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (searchInput) searchInput.value = searchKeyword;
     }
 
+    // ĐỌC DANH MỤC NẾU CLICK TỪ TRANG CHỦ (Bổ sung phần này)
+    const urlCatId = urlParams.get('catId');
+    if (urlCatId) {
+        activeFilters.categoryId = parseInt(urlCatId);
+    }
+
     // 2. TẢI DỮ LIỆU
     loadMasterData();
     loadProducts();

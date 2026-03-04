@@ -144,40 +144,71 @@ async function handleRefreshToken() {
     return refreshPromise;
 }
 // ==========================================================================
-// GLOBAL SEARCH LOGIC (TÌM KIẾM TOÀN CỤC TRÊN HEADER)
+// GLOBAL SEARCH & GLOBAL HEADER MENU
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('global-search-input');
     const searchBtn = document.getElementById('global-search-btn');
 
     if (searchInput) {
-        // 1. Khi người dùng ấn phím Enter
         searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                executeGlobalSearch(searchInput.value);
-            }
+            if (e.key === 'Enter') executeGlobalSearch(searchInput.value);
         });
     }
 
     if (searchBtn) {
-        // 2. Khi người dùng click vào icon kính lúp
         searchBtn.addEventListener('click', () => {
             if (searchInput) executeGlobalSearch(searchInput.value);
         });
     }
+
+    // GỌI HÀM LOAD DANH MỤC LÊN HEADER CHO MỌI TRANG
+    loadHeaderCategories();
 });
+
+// Hàm lấy API danh mục đổ lên thanh menu ngang
+// Hàm lấy API danh mục đổ lên thanh menu ngang (Hỗ trợ Đa cấp)
+async function loadHeaderCategories() {
+    try {
+        const categories = await apiFetch('/categories').catch(() => []);
+        const dropdown = document.getElementById('header-category-dropdown');
+        if (!dropdown) return;
+        
+        dropdown.innerHTML = '';
+        
+        categories.forEach(cat => {
+            // Nếu danh mục cha CÓ danh mục con bên trong
+            if (cat.children && cat.children.length > 0) {
+                let html = `
+                    <li class="has-submenu">
+                        <a href="shop.html?catId=${cat.id}">
+                            ${cat.name} 
+                            <i class="ph-bold ph-caret-right"></i> </a>
+                        <ul class="submenu">
+                `;
+                // Duyệt vòng lặp vẽ các danh mục con
+                cat.children.forEach(child => {
+                    html += `<li><a href="shop.html?catId=${child.id}">${child.name}</a></li>`;
+                });
+                
+                html += `</ul></li>`;
+                dropdown.insertAdjacentHTML('beforeend', html);
+            } 
+            // Nếu danh mục KHÔNG CÓ con (VD: Phụ kiện)
+            else {
+                dropdown.insertAdjacentHTML('beforeend', `<li><a href="shop.html?catId=${cat.id}">${cat.name}</a></li>`);
+            }
+        });
+    } catch (e) {
+        console.error("Lỗi tải danh mục header");
+    }
+}
 
 function executeGlobalSearch(keyword) {
     const trimmedKeyword = keyword.trim();
-    if (!trimmedKeyword) return; // Không gõ gì thì không tìm
-
-    // Kiểm tra xem trình duyệt có đang ở trang shop.html không
+    if (!trimmedKeyword) return;
     const isShopPage = window.location.pathname.includes('shop.html');
-
     if (!isShopPage) {
-        // Nếu ĐANG Ở TRANG CHỦ (hoặc trang khác): Chuyển hướng sang Shop kèm theo từ khóa
         window.location.href = `shop.html?search=${encodeURIComponent(trimmedKeyword)}`;
     }
-    // Ghi chú: Nếu ĐÃ Ở TRANG SHOP, file shop.js đã tự động xử lý Live Search (gõ tới đâu lọc tới đó), 
-    // nên ta không cần redirect trang ở đây nữa.
 }
