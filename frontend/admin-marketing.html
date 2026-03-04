@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Khuyến mãi | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/admin-marketing.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo"><img src="image/logo.png" alt="WebNhom5"></div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Tổng quan</a>
+                <a href="admin-orders.html" class="nav-item"><i class="ph ph-receipt"></i> Đơn hàng</a>
+                <a href="admin-products.html" class="nav-item"><i class="ph ph-package"></i> Sản phẩm</a>
+                <a href="admin-users.html" class="nav-item"><i class="ph ph-users"></i> Khách hàng</a>
+                <a href="admin-marketing.html" class="nav-item active"><i class="ph-fill ph-tag"></i> Khuyến mãi</a>
+                <a href="admin-reports.html" class="nav-item"><i class="ph ph-chart-line-up"></i> Báo cáo doanh thu</a>
+            </nav>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <div class="topbar-search">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" placeholder="Tìm tên chương trình...">
+                </div>
+                <div class="topbar-profile">
+                    <div class="profile-info">
+                        <img src="" class="avatar" id="admin-avatar">
+                        <span class="admin-name" id="display-admin-name">Đang tải...</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header-flex">
+                    <h1 class="page-title">Chiến dịch Khuyến mãi</h1>
+                    <button class="btn btn-primary" onclick="openPromoModal()">
+                        <i class="ph ph-plus-circle"></i> Tạo chương trình mới
+                    </button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Tên chương trình</th>
+                                <th>Loại giảm giá</th>
+                                <th>Giá trị</th>
+                                <th>Thời gian</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="promo-tbody">
+                            <tr><td colspan="6" class="text-center">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="promo-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Cài đặt Khuyến mãi</h2>
+                <button class="btn-close" onclick="closePromoModal()"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="promo-form" onsubmit="submitPromo(event)">
+                    <div class="form-group">
+                        <label>Tên chương trình *</label>
+                        <input type="text" id="promo-name" class="form-control" required placeholder="VD: Khuyến mãi mùa Hè">
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Loại giảm giá</label>
+                            <select id="discount-type" class="form-control">
+                                <option value="PERCENTAGE">Phần trăm (%)</option>
+                                <option value="FIXED_AMOUNT">Số tiền cố định (₫)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Giá trị giảm *</label>
+                            <input type="number" id="discount-value" class="form-control" required min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Ngày bắt đầu *</label>
+                            <input type="date" id="start-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày kết thúc *</label>
+                            <input type="date" id="end-date" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" onclick="closePromoModal()">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu chiến dịch</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="coupon-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Sinh mã Coupon tự động</h2>
+                <button class="btn-close" onclick="closeCouponModal()"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="coupon-form" onsubmit="submitGenerateCoupons(event)">
+                    <input type="hidden" id="gen-promo-id">
+                    <div class="form-group">
+                        <label>Tiền tố mã (Prefix)</label>
+                        <input type="text" id="coupon-prefix" class="form-control" placeholder="VD: SUMMER" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Số lượng mã cần tạo *</label>
+                        <input type="number" id="coupon-qty" class="form-control" required min="1" max="1000" value="10">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" onclick="closeCouponModal()">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Bắt đầu sinh mã</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/admin-marketing.js"></script>
+</body>
+</html>

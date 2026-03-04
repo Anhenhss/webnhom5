@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ hàng | WebNhom5</title>
+    
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cart.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="logo-wrapper">
+            <img src="image/logo.png" alt="Logo" onerror="this.src='https://ui-avatars.com/api/?name=W5&background=003049&color=fff'">
+            <span class="brand-name">WebNhom5</span>
+        </div>
+        
+        <nav class="main-nav">
+            <a href="index.html">Trang chủ</a>
+            <a href="shop.html">Sản phẩm</a>
+            <a href="about.html">Về chúng tôi</a>
+        </nav>
+
+        <div class="header-actions">
+            <div class="search-box">
+                <input type="text" id="global-search-input" placeholder="Tìm kiếm sản phẩm...">
+                <i class="ph ph-magnifying-glass" id="global-search-btn" style="cursor: pointer;"></i>
+            </div>
+            <a href="cart.html" class="icon-link"><i class="ph ph-shopping-bag"></i></a>
+            
+            <div class="user-menu-container" id="user-menu-container">
+                <a href="login.html" class="icon-link"><i class="ph ph-user"></i></a>
+            </div>
+        </div>
+    </header>
+
+    <div class="checkout-progress-wrapper">
+        <div class="checkout-progress">
+            <div class="progress-step active">
+                <div class="step-icon"><i class="ph-fill ph-shopping-bag"></i></div>
+                <span class="step-text">Giỏ hàng</span>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step">
+                <div class="step-icon"><i class="ph ph-identification-card"></i></div>
+                <span class="step-text">Thông tin đặt hàng</span>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step">
+                <div class="step-icon"><i class="ph ph-check-circle"></i></div>
+                <span class="step-text">Hoàn tất</span>
+            </div>
+        </div>
+    </div>
+
+    <main class="cart-container">
+        <div class="cart-layout" id="cart-content">
+            <div class="cart-items-section">
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th class="text-center">Đơn giá</th>
+                            <th class="text-center">Số lượng</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-tbody">
+                        <tr><td colspan="4" class="loading-text">Đang tải giỏ hàng...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="cart-summary-section">
+                <div class="summary-box">
+                    <h3>Tổng đơn hàng</h3>
+                    <div class="summary-row">
+                        <span>Tạm tính:</span>
+                        <span id="subtotal-amount">0 ₫</span>
+                    </div>
+                    <div class="summary-row text-muted">
+                        <span>Phí vận chuyển:</span>
+                        <span>Chưa tính</span>
+                    </div>
+                    <hr class="summary-divider">
+                    <div class="summary-row total-row">
+                        <span>Tổng thanh toán:</span>
+                        <span id="total-amount">0 ₫</span>
+                    </div>
+                    <button class="btn btn-primary btn-checkout" onclick="goToCheckout()">
+                        Đặt hàng ngay
+                    </button>
+                    <p class="summary-note">Bạn có thể nhập mã giảm giá ở bước sau.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="empty-cart-message" class="empty-cart" style="display: none;">
+            <i class="ph ph-shopping-cart empty-icon"></i>
+            <p>Giỏ hàng của bạn đang trống.</p>
+            <a href="shop.html" class="btn btn-primary">Tiếp tục mua sắm</a>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4>WebNhom5</h4>
+                <p>Nâng tầm phong cách với sự tinh tế và thanh lịch.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Hỗ trợ khách hàng</h4>
+                <ul>
+                    <li><a href="return-policy.html">Chính sách đổi trả</a></li>
+                    <li><a href="size-guide.html">Hướng dẫn chọn size</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Liên hệ</h4>
+                <p>Email: hotro@webnhom5.com</p>
+                <p>Hotline: 1900 xxxx</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 WebNhom5. Đồ án môn học Ứng dụng Web.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/cart.js"></script>
+</body>
+</html>

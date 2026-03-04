@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập & Đăng ký | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css"> 
+    <link rel="stylesheet" href="css/login.css">
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <a href="index.html" class="back-home"><i class="ph ph-arrow-left"></i> Quay lại Cửa hàng</a>
+
+    <div class="auth-wrapper">
+        <div class="auth-container" id="auth-container">
+            
+            <div class="form-container sign-up-container">
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <h2>Tạo Tài Khoản</h2>
+                    <span>Điền thông tin của bạn</span>
+                    <input type="text" id="reg-name" placeholder="Họ và tên" required />
+                    <input type="email" id="reg-email" placeholder="Email" required />
+                    <input type="password" id="reg-pass" placeholder="Mật khẩu" required minlength="6" />
+                    <input type="password" id="reg-confirm" placeholder="Xác nhận mật khẩu" required />
+                    <button class="btn btn-primary btn-submit" type="submit" id="btn-register">ĐĂNG KÝ</button>
+                </form>
+            </div>
+
+            <div class="form-container sign-in-container">
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <h2>Đăng Nhập</h2>
+                    
+                    <div class="social-container" style="display: flex; justify-content: center; align-items: center; width: 100%; margin: 15px 0 25px 0;">
+                        <div id="g_id_onload"
+                             data-client_id="1048481546800-pjoq7bic0qgofbudfu2p2ffp08t33j30.apps.googleusercontent.com"
+                             data-context="signin"
+                             data-ux_mode="popup"
+                             data-callback="handleGoogleLogin"
+                             data-auto_prompt="false">
+                        </div>
+                        <div class="g_id_signin" 
+                             data-type="standard" 
+                             data-shape="pill" 
+                             data-theme="outline" 
+                             data-text="signin_with" 
+                             data-size="large" 
+                             data-logo_alignment="center"> </div>
+                    </div>
+
+                    <span>hoặc đăng nhập bằng tài khoản</span>
+                    <input type="email" id="login-email" placeholder="Email" required />
+                    <input type="password" id="login-pass" placeholder="Mật khẩu" required />
+                    <a href="#" class="forgot-password">Quên mật khẩu?</a>
+                    <button class="btn btn-primary btn-submit" type="submit" id="btn-login">ĐĂNG NHẬP</button>
+                </form>
+            </div>
+
+            <div class="overlay-container">
+                <div class="overlay">
+                    <div class="overlay-panel overlay-left">
+                        <img src="image/logo.png" alt="WebNhom5" class="overlay-logo" onerror="this.src='https://ui-avatars.com/api/?name=W5'">
+                        <h2>Chào mừng trở lại!</h2>
+                        <p>Đăng nhập để tận hưởng các đặc quyền mua sắm.</p>
+                        <button class="btn btn-outline overlay-btn" id="signInToggle">Đăng Nhập</button>
+                    </div>
+                    <div class="overlay-panel overlay-right">
+                        <img src="image/logo.png" alt="WebNhom5" class="overlay-logo" onerror="this.src='https://ui-avatars.com/api/?name=W5'">
+                        <h2>Xin chào, Bạn mới!</h2>
+                        <p>Bắt đầu hành trình định hình phong cách cùng WebNhom5.</p>
+                        <button class="btn btn-outline overlay-btn" id="signUpToggle">Tạo Tài Khoản</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/login.js"></script>
+</body>
+</html>

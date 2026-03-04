@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng dẫn chọn Size | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .size-container {
+            max-width: 1000px; margin: 60px auto; padding: 0 20px;
+        }
+        .size-header { text-align: center; margin-bottom: 50px; }
+        .size-header h1 { font-size: 2.5rem; color: var(--color-primary); }
+        .size-header p { color: var(--text-muted); font-size: 1.1rem; margin-top: 10px; }
+        
+        .measure-guide {
+            display: flex; gap: 40px; background: #FFF; padding: 30px; border-radius: 12px; box-shadow: var(--shadow-sm); margin-bottom: 50px;
+        }
+        .measure-text h3 { color: var(--color-primary); margin-bottom: 20px; font-size: 1.4rem;}
+        .measure-text ul { list-style: none; padding: 0; }
+        .measure-text li { margin-bottom: 15px; display: flex; gap: 10px; align-items: flex-start;}
+        .measure-text li i { color: var(--color-accent-light); font-size: 1.5rem; margin-top: 2px;}
+
+        /* Thiết kế Bảng (Table) */
+        .size-table-wrapper { margin-bottom: 50px; }
+        .size-table-wrapper h3 { color: var(--color-primary); margin-bottom: 15px; font-size: 1.3rem; border-left: 4px solid var(--color-accent-light); padding-left: 10px;}
+        table {
+            width: 100%; border-collapse: collapse; background: #FFF; border-radius: 8px; overflow: hidden; box-shadow: var(--shadow-sm);
+        }
+        th, td { padding: 15px; text-align: center; border-bottom: 1px solid #EEE; }
+        th { background-color: var(--color-primary); color: #FFF; font-weight: 600; text-transform: uppercase;}
+        tr:hover { background-color: var(--color-bg-sub); }
+        td:first-child { font-weight: 700; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="logo-wrapper">
+            <img src="image/logo.png" alt="Logo" onerror="this.src='https://ui-avatars.com/api/?name=W5&background=003049&color=fff'">
+            <span class="brand-name">WebNhom5</span>
+        </div>
+        <nav class="main-nav">
+            <a href="index.html">Trang chủ</a>
+            <a href="shop.html">Sản phẩm</a>
+            <a href="about.html">Về chúng tôi</a>
+        </nav>
+        <div class="header-actions">
+            <div class="search-box">
+                <input type="text" id="global-search-input" placeholder="Tìm kiếm sản phẩm...">
+                <i class="ph ph-magnifying-glass" id="global-search-btn" style="cursor: pointer;"></i>
+            </div>
+            <a href="cart.html" class="icon-link"><i class="ph ph-shopping-bag"></i></a>
+            
+            <div class="user-menu-container" id="user-menu-container">
+                <a href="login.html" class="icon-link"><i class="ph ph-user"></i></a>
+            </div>
+        </div>
+    </header>
+
+    <main class="size-container">
+        <div class="size-header">
+            <h1>Bảng Quy Đổi Kích Cỡ</h1>
+            <p>Để có một bộ trang phục hoàn hảo, sự vừa vặn là yếu tố tiên quyết. Hãy tham khảo bảng dưới đây để tìm ra kích cỡ phù hợp nhất với bạn.</p>
+        </div>
+
+        <div class="measure-guide">
+            <div class="measure-text">
+                <h3>Cách lấy số đo cơ thể chuẩn xác</h3>
+                <ul>
+                    <li><i class="ph-fill ph-ruler"></i> <div><strong>Vòng ngực:</strong> Quấn thước dây qua phần nhô cao nhất của vòng ngực, đảm bảo thước dây song song với mặt đất.</div></li>
+                    <li><i class="ph-fill ph-ruler"></i> <div><strong>Vòng eo:</strong> Đo quanh phần hẹp nhất của vòng eo (thường nằm ngay trên rốn).</div></li>
+                    <li><i class="ph-fill ph-ruler"></i> <div><strong>Vòng mông:</strong> Đứng thẳng, chụm hai chân lại và đo phần nở nhất của vòng mông.</div></li>
+                    <li><i class="ph-fill ph-info"></i> <div style="color: var(--text-muted); font-size: 0.95rem;">Lưu ý: Bảng size chỉ mang tính chất tham khảo. Tuỳ thuộc vào form dáng (ôm, suông, oversize) và chất liệu vải mà kích thước có thể xê dịch 1-2cm.</div></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="size-table-wrapper">
+            <h3>1. Bảng Size Áo & Đầm Liền (Tops & Dresses)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Size</th>
+                        <th>Cân nặng (kg)</th>
+                        <th>Vòng Ngực (cm)</th>
+                        <th>Vòng Eo (cm)</th>
+                        <th>Vòng Mông (cm)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>S</td><td>40 - 47</td><td>80 - 84</td><td>60 - 64</td><td>86 - 90</td></tr>
+                    <tr><td>M</td><td>48 - 54</td><td>85 - 88</td><td>65 - 68</td><td>91 - 94</td></tr>
+                    <tr><td>L</td><td>55 - 60</td><td>89 - 92</td><td>69 - 72</td><td>95 - 98</td></tr>
+                    <tr><td>XL</td><td>61 - 65</td><td>93 - 96</td><td>73 - 76</td><td>99 - 102</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="size-table-wrapper">
+            <h3>2. Bảng Size Quần & Chân Váy (Bottoms)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Size</th>
+                        <th>Vòng Eo Quần (cm)</th>
+                        <th>Vòng Mông (cm)</th>
+                        <th>Chiều dài tham khảo (cm)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>S</td><td>62 - 65</td><td>86 - 89</td><td>90 - 92</td></tr>
+                    <tr><td>M</td><td>66 - 69</td><td>90 - 93</td><td>92 - 94</td></tr>
+                    <tr><td>L</td><td>70 - 73</td><td>94 - 97</td><td>94 - 96</td></tr>
+                    <tr><td>XL</td><td>74 - 77</td><td>98 - 101</td><td>96 - 98</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4>WebNhom5</h4>
+                <p>Nâng tầm phong cách với sự tinh tế và thanh lịch.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Hỗ trợ khách hàng</h4>
+                <ul>
+                    <li><a href="return-policy.html">Chính sách đổi trả</a></li>
+                    <li><a href="size-guide.html">Hướng dẫn chọn size</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Liên hệ</h4>
+                <p>Email: hotro@webnhom5.com</p>
+                <p>Hotline: 1900 xxxx</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 WebNhom5. Đồ án môn học Ứng dụng Web.</p>
+        </div>
+    </footer>
+    <script src="js/api.js"></script>
+</body>
+</html>

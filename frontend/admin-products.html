@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Sản phẩm | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/admin-products.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo"><img src="image/logo.png" alt="WebNhom5"></div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Tổng quan</a>
+                <a href="admin-orders.html" class="nav-item"><i class="ph ph-receipt"></i> Đơn hàng</a>
+                <a href="admin-products.html" class="nav-item active"><i class="ph-fill ph-package"></i> Sản phẩm</a>
+                <a href="admin-categories.html" class="nav-item"><i class="ph ph-list-dashes"></i> Danh mục</a>
+                <a href="admin-users.html" class="nav-item"><i class="ph ph-users"></i> Khách hàng</a>
+                <a href="admin-marketing.html" class="nav-item"><i class="ph ph-tag"></i> Khuyến mãi</a>
+                <a href="admin-reports.html" class="nav-item"><i class="ph ph-chart-line-up"></i> Báo cáo</a>
+            </nav>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <div class="topbar-search">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" id="product-search" placeholder="Tìm tên sản phẩm, mã SKU...">
+                </div>
+                <div class="topbar-profile">
+                    <div class="profile-info">
+                        <img src="" class="avatar" id="admin-avatar">
+                        <span class="admin-name" id="display-admin-name">Đang tải...</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header-flex">
+                    <h1 class="page-title">Danh sách Sản phẩm</h1>
+                    <button class="btn btn-primary" onclick="openProductModal()">
+                        <i class="ph ph-plus-circle"></i> Thêm sản phẩm mới
+                    </button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Danh mục</th>
+                                <th>Giá cơ bản</th>
+                                <th>Tổng kho</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-tbody">
+                            <tr><td colspan="6" class="text-center">Đang tải dữ liệu sản phẩm...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="product-modal" style="display: none;">
+        <div class="modal-content modal-xl">
+            <div class="modal-header">
+                <h2 id="modal-title">Thông tin Sản phẩm</h2>
+                <button class="btn-close" onclick="closeProductModal()"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body scrollable-body">
+                <form id="product-form" onsubmit="saveProduct(event)">
+                    <div class="product-form-grid">
+                        
+                        <div class="form-column">
+                            <h3 class="section-subtitle">1. Thông tin chung</h3>
+                            <div class="form-group">
+                                <label>Tên sản phẩm *</label>
+                                <input type="text" id="p-name" class="form-control" required placeholder="VD: Áo Sơ mi Nữ Lụa" oninput="updateAllSKUs()">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Danh mục *</label>
+                                    <select id="p-category" class="form-control" required></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Giá gốc (₫) *</label>
+                                    <input type="number" id="p-price" class="form-control" required min="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Mô tả sản phẩm</label>
+                                <textarea id="p-desc" class="form-control" rows="4"></textarea>
+                            </div>
+                            
+                            <h3 class="section-subtitle">2. Quản lý Hình ảnh</h3>
+                            <div class="form-group">
+                                <label>Ảnh đại diện (Thumbnail) *</label>
+                                <input type="file" id="p-thumbnail" class="form-control" accept="image/*" onchange="previewThumbnail(this)">
+                                <div id="thumbnail-preview" class="thumbnail-preview-zone"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Ảnh đính kèm (Nhiều ảnh)</label>
+                                <input type="file" id="p-gallery" class="form-control" accept="image/*" multiple onchange="handleGalleryUpload(event)">
+                                <div id="gallery-preview" class="gallery-preview-zone"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-column variant-column">
+                            <div class="flex-between" style="margin-bottom: 20px;">
+                                <h3 class="section-subtitle" style="margin: 0;">3. Biến thể (Variants)</h3>
+                                <div>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="openMasterModal('Color')"><i class="ph ph-palette"></i> Thêm Màu mới</button>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="openMasterModal('Size')"><i class="ph ph-ruler"></i> Thêm Size mới</button>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-primary btn-sm mb-3" onclick="addVariantRow()">
+                                <i class="ph ph-plus"></i> Thêm cấu hình
+                            </button>
+                            
+                            <div class="variant-table-wrapper">
+                                <table class="variant-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Màu sắc</th>
+                                            <th>Kích thước</th>
+                                            <th>Mã SKU (Tự động)</th>
+                                            <th style="width: 80px;">Tồn kho</th>
+                                            <th style="width: 100px;">Giá +/- (₫)</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="variant-tbody">
+                                        </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeProductModal()">Hủy</button>
+                <button type="submit" form="product-form" class="btn btn-primary">Lưu Sản phẩm</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="color-modal" style="display: none; z-index: 1100;">
+        <div class="modal-content" style="max-width: 400px; height: auto;">
+            <div class="modal-header">
+                <h2>Thêm Màu sắc mới</h2>
+                <button class="btn-close" onclick="closeMasterModal('Color')"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="color-form" onsubmit="submitMasterData(event, 'Color')">
+                    <div class="form-group">
+                        <label>Tên màu *</label>
+                        <input type="text" id="new-color-name" class="form-control" placeholder="VD: Đen, Đỏ, Xanh lá..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mã Màu (Hex) *</label>
+                        <input type="color" id="new-color-hex" class="form-control" required style="height: 50px; padding: 5px; cursor: pointer;">
+                    </div>
+                    <div class="modal-footer" style="padding: 15px 0 0 0; border: none;">
+                        <button type="button" class="btn btn-outline" onclick="closeMasterModal('Color')">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu Màu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="size-modal" style="display: none; z-index: 1100;">
+        <div class="modal-content" style="max-width: 400px; height: auto;">
+            <div class="modal-header">
+                <h2>Thêm Kích thước mới</h2>
+                <button class="btn-close" onclick="closeMasterModal('Size')"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="size-form" onsubmit="submitMasterData(event, 'Size')">
+                    <div class="form-group">
+                        <label>Tên Kích thước (Size) *</label>
+                        <input type="text" id="new-size-name" class="form-control" placeholder="VD: S, M, L, 39, 40..." required>
+                        <small style="color: #666; margin-top: 5px;">Hệ thống sẽ dùng tên này làm mã SKU.</small>
+                    </div>
+                    <div class="modal-footer" style="padding: 15px 0 0 0; border: none;">
+                        <button type="button" class="btn btn-outline" onclick="closeMasterModal('Size')">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu Size</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/admin-products.js"></script>
+</body>
+</html>

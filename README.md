@@ -20,3 +20,7 @@ dotnet ef dbcontext scaffold "Server=.\SQLEXPRESS;Database=FashionEcommerceDB;Tr
 Lưu ý: Lúc git clone về là webnhom5 sẽ bao gồm các mục backend, fontend,... nên khi làm cần:
 - Lúc chay các thư viện dotnet, hay chạy chương trình cần cd backend -> cd webnhom5 rồi mới dotnet
 - Lúc lưu cần cd .. rồi cd .. một lần nữa mới git add . -> git commit -m "ghi chi tiết rõ ràng" -> git push
+- Dotnet run xong kiểm tra cổng là bao nhiêu xem có trùng với cổng ở api.js không. Nếu không đúng Đổi lại port này theo đúng cổng mà backend ASP.NET Core đang chạy (vd: 5001, 7123...)
+const BASE_URL = 'https://localhost:5195/api'; 
+- Muốn xem web thì nên Open with Live Server hoặc theo đường link cổng ví dụ https://localhost:5500/index.html  
+lưu ý dotnet run phần backend thì fontend mới chạy

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo cáo Tài chính | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/admin-reports.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo"><img src="image/logo.png" alt="WebNhom5"></div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Tổng quan</a>
+                <a href="admin-orders.html" class="nav-item"><i class="ph ph-receipt"></i> Đơn hàng</a>
+                <a href="admin-products.html" class="nav-item"><i class="ph ph-package"></i> Sản phẩm</a>
+                <a href="admin-users.html" class="nav-item"><i class="ph ph-users"></i> Khách hàng</a>
+                <a href="admin-marketing.html" class="nav-item"><i class="ph ph-tag"></i> Khuyến mãi</a>
+                <a href="admin-reports.html" class="nav-item active"><i class="ph-fill ph-chart-line-up"></i> Báo cáo doanh thu</a>
+            </nav>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <div class="topbar-search">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" placeholder="Tìm kiếm báo cáo...">
+                </div>
+                <div class="topbar-profile">
+                    <div class="profile-info">
+                        <img src="" class="avatar" id="admin-avatar">
+                        <span class="admin-name" id="display-admin-name">Admin</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header-flex">
+                    <h1 class="page-title">Báo cáo & Tài chính</h1>
+                    <button class="btn btn-primary" onclick="exportToExcel()">
+                        <i class="ph ph-file-xls"></i> Xuất Báo cáo Excel
+                    </button>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-group">
+                        <label>Xem theo</label>
+                        <select id="report-period" class="form-control" onchange="loadReportData()">
+                            <option value="7">7 ngày gần nhất (Tuần)</option>
+                            <option value="30">Tháng</option>
+                            <option value="365">Năm nay</option>
+                        </select>
+                    </div>
+                    <div class="report-summary-mini">
+                        <div class="mini-card">
+                            <span>Tổng doanh thu</span>
+                            <h3 id="txt-total-revenue">0₫</h3>
+                        </div>
+                        <div class="mini-card">
+                            <span>Số đơn hoàn thành</span>
+                            <h3 id="txt-total-orders">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="admin-table" id="report-table">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Số đơn hàng</th>
+                                <th>Doanh thu (₫)</th>
+                                <th>Trung bình/Đơn</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-tbody">
+                            <tr><td colspan="4" class="text-center">Đang tính toán dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/admin-reports.js"></script>
+</body>
+</html>

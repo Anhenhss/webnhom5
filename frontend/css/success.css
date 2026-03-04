@@ -1,0 +1,81 @@
+/* ==========================================================================
+   SUCCESS PAGE STYLES
+   ========================================================================== */
+   .success-container {
+    max-width: 800px;
+    margin: 60px auto;
+    padding: 0 20px;
+    min-height: 45vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.success-box {
+    background-color: #fff;
+    padding: 50px 40px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    border: 1px solid #EAEAEA;
+    text-align: center;
+    width: 100%;
+}
+
+.success-icon-wrapper {
+    margin-bottom: 24px;
+}
+
+.success-icon {
+    font-size: 5rem;
+    color: var(--color-primary); /* Dùng màu xanh dương đậm chủ đạo để tạo sự tin cậy */
+}
+
+.success-title {
+    font-size: 2rem;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.success-message {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+}
+
+.order-info-card {
+    background-color: #FAFAFA;
+    border: 1px dashed #D9D9D9;
+    padding: 24px;
+    border-radius: var(--radius);
+    margin-bottom: 40px;
+}
+
+.order-info-card p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.order-code {
+    font-size: 2rem;
+    color: var(--color-accent-dark); /* Nhấn mạnh mã đơn bằng màu đỏ sẫm */
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+.order-note {
+    font-size: 0.9rem !important;
+    font-style: italic;
+}
+
+.success-actions {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.success-actions .btn {
+    min-width: 200px;
+    padding: 14px 24px;
+    border-radius: 30px; /* Nút bo tròn mềm mại */
+}

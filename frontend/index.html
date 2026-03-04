@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Chủ | WebNhom5 - Modern Luxury</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/shop.css"> 
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="logo-wrapper">
+            <img src="image/logo.png" alt="Logo" onerror="this.src='https://ui-avatars.com/api/?name=W5&background=003049&color=fff'">
+            <span class="brand-name">WebNhom5</span>
+        </div>
+        
+        <nav class="main-nav">
+            <a href="index.html">Trang chủ</a>
+            
+            <div class="nav-item-dropdown">
+                <a href="shop.html">Sản phẩm <i class="ph-bold ph-caret-down"></i></a>
+                <ul class="dropdown-menu" id="header-category-dropdown">
+                    </ul>
+            </div>
+
+            <a href="about.html">Về chúng tôi</a>
+        </nav>
+
+        <div class="header-actions">
+            <div class="search-box">
+                <input type="text" id="global-search-input" placeholder="Tìm kiếm sản phẩm...">
+                <i class="ph ph-magnifying-glass" id="global-search-btn" style="cursor: pointer;"></i>
+            </div>
+            <a href="cart.html" class="icon-link"><i class="ph ph-shopping-bag"></i></a>
+            <a href="login.html" class="icon-link"><i class="ph ph-user"></i></a>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero-section">
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <span class="hero-subtitle">BỘ SƯU TẬP MỚI 2026</span>
+                <h1 class="hero-title">WEBNHOM5</h1>
+                <p class="hero-desc">Định Hình Phong Cách. Khẳng Định Khí Chất.</p>
+                <a href="shop.html" class="btn btn-primary hero-btn">Khám phá ngay</a>
+            </div>
+        </section>
+
+        <section class="services-section">
+            <div class="service-container">
+                <div class="service-item"><i class="ph-light ph-truck"></i><div><h4>Miễn phí vận chuyển</h4><p>Từ 500k</p></div></div>
+                <div class="service-item"><i class="ph-light ph-arrow-u-down-left"></i><div><h4>Đổi trả dễ dàng</h4><p>Trong 7 ngày</p></div></div>
+                <div class="service-item"><i class="ph-light ph-shield-check"></i><div><h4>Thanh toán an toàn</h4><p>Bảo mật 100%</p></div></div>
+                <div class="service-item"><i class="ph-light ph-headset"></i><div><h4>Hỗ trợ 24/7</h4><p>Luôn đồng hành</p></div></div>
+            </div>
+        </section>
+
+        <section class="featured-categories">
+            <h2 class="section-heading">DANH MỤC NỔI BẬT</h2>
+            <div class="category-slider-wrapper">
+                <button class="slider-btn btn-prev" onclick="scrollCategories(-1)"><i class="ph-bold ph-caret-left"></i></button>
+                
+                <div class="cat-grid" id="dynamic-categories">
+                    </div>
+                
+                <button class="slider-btn btn-next" onclick="scrollCategories(1)"><i class="ph-bold ph-caret-right"></i></button>
+            </div>
+        </section>
+
+        <section class="sale-section">
+            <div class="sale-banner">
+                <h2>VOUCHER</h2>
+            </div>
+            
+            <div class="voucher-grid" id="dynamic-vouchers">
+                <p style="text-align: center; grid-column: 1/-1; color: var(--text-muted);">Đang tìm kiếm khuyến mãi...</p>
+            </div>
+        </section>
+
+        <section class="new-arrivals">
+            <h2 class="section-heading">HÀNG MỚI VỀ</h2>
+            <div class="product-grid" id="new-arrivals-grid" style="max-width: 1300px; margin: 0 auto; padding: 0 20px;">
+                <p style="text-align: center; grid-column: 1/-1;">Đang tải dữ liệu...</p>
+            </div>
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="shop.html" class="btn btn-outline" style="padding: 12px 40px; font-size: 1.1rem;">Xem Tất Cả</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4>WebNhom5</h4>
+                <p>Nâng tầm phong cách với sự tinh tế và thanh lịch.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Hỗ trợ khách hàng</h4>
+                <ul>
+                    <li><a href="return-policy.html">Chính sách đổi trả</a></li>
+                    <li><a href="size-guide.html">Hướng dẫn chọn size</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Liên hệ</h4>
+                <p>Email: hotro@webnhom5.com</p>
+                <p>Hotline: 1900 xxxx</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 WebNhom5. Đồ án môn học Ứng dụng Web.</p>
+        </div>
+    </footer>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/index.js"></script>
+</body>
+</html>

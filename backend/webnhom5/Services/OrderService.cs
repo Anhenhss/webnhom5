@@ -22,7 +22,15 @@ namespace webnhom5.Services
                 .Include(v => v.Product)
                 .FirstOrDefaultAsync(v => v.Id == dto.ProductVariantId);
 
-            if (variant == null) throw new Exception("Sản phẩm không tồn tại.");
+            if (variant == null) throw new Exception("Sản phẩm (biến thể) không tồn tại.");
+
+            // Kiểm tra xem biến thể này có đúng là của sản phẩm cha gửi lên không
+            if (variant.ProductId != dto.ProductId)
+            {
+                throw new Exception("Dữ liệu không hợp lệ: Biến thể này không thuộc về sản phẩm đã chọn.");
+            }
+            // --------------------------------
+
             if (variant.Quantity < dto.Quantity) throw new Exception($"Kho chỉ còn {variant.Quantity} sản phẩm.");
 
             // B. Check xem đã có trong giỏ chưa
@@ -35,7 +43,7 @@ namespace webnhom5.Services
             }
             else
             {
-                var cartItem = new CartItems
+                var cartItem = new CartItem
                 {
                     UserId = userId,
                     ProductId = dto.ProductId,
@@ -104,7 +112,7 @@ namespace webnhom5.Services
 
                 // Bước 2: Tính toán tiền & Trừ kho (Quan trọng)
                 decimal totalAmount = 0;
-                
+
                 foreach (var item in cartItems)
                 {
                     // Check tồn kho lần cuối (Concurrency check)
@@ -122,18 +130,18 @@ namespace webnhom5.Services
                     totalAmount += price * (item.Quantity ?? 0);
                 }
 
-                // Bước 3: Tạo Order (Snapshot Address)
-                var order = new Orders
+                // Bước 3: Tạo Order (Snapshot Address) 
+                var order = new Order
                 {
                     UserId = userId,
-                    OrderCode = "ORD-" + DateTime.Now.Ticks, // Mã đơn giản
+                    OrderCode = "ORD-" + DateTime.Now.ToString("yyMMddHHmmss"), // Ví dụ: ORD-260116082512 (16 ký tự)
                     OrderDate = DateTime.Now,
-                    ShippingName = dto.ShippingName,       // SNAPSHOT
-                    ShippingAddress = dto.ShippingAddress, // SNAPSHOT
-                    ShippingPhone = dto.ShippingPhone,     // SNAPSHOT
+                    ShippingName = dto.ShippingName,
+                    ShippingAddress = dto.ShippingAddress,
+                    ShippingPhone = dto.ShippingPhone,
                     PaymentMethod = dto.PaymentMethod,
                     TotalAmount = totalAmount,
-                    FinalAmount = totalAmount, // Chưa tính giảm giá/phí ship
+                    FinalAmount = totalAmount,
                     Status = 0, // Pending
                     PaymentStatus = "Unpaid"
                 };
@@ -141,26 +149,25 @@ namespace webnhom5.Services
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync(); // Để lấy OrderId
 
-                // Bước 4: Tạo OrderDetails (Snapshot Product Data)
+                // Bước 4: Tạo OrderDetails (Snapshot Product Data) 
                 foreach (var item in cartItems)
                 {
                     decimal price = item.Product.Price + (item.ProductVariant.PriceModifier ?? 0);
-                    var detail = new OrderDetails
+                    var detail = new OrderDetail
                     {
                         OrderId = order.Id,
                         ProductVariantId = item.ProductVariantId,
                         Quantity = item.Quantity ?? 0,
                         UnitPrice = price,
-                        // SNAPSHOT DATA: Lưu cứng tên và ảnh lúc mua
-                        Snapshot_ProductName = item.Product.Name, 
-                        Snapshot_Sku = item.ProductVariant.Sku,
-                        Snapshot_Thumbnail = item.Product.Thumbnail
+                        SnapshotProductName = item.Product.Name,
+                        SnapshotSku = item.ProductVariant.Sku,
+                        SnapshotThumbnail = item.Product.Thumbnail
                     };
                     _context.OrderDetails.Add(detail);
                 }
 
-                // Bước 5: Ghi log trạng thái khởi tạo
-                _context.OrderStatusHistory.Add(new OrderStatusHistory
+                // Bước 5: Ghi log trạng thái khởi tạo 
+                _context.OrderStatusHistories.Add(new OrderStatusHistory
                 {
                     OrderId = order.Id,
                     NewStatus = 0,
@@ -173,14 +180,13 @@ namespace webnhom5.Services
                 _context.CartItems.RemoveRange(cartItems);
                 await _context.SaveChangesAsync();
 
-                // Commit Transaction: Chỉ khi mọi thứ OK mới lưu DB
+                // Commit Transaction
                 await transaction.CommitAsync();
 
                 return order.OrderCode;
             }
             catch (Exception)
             {
-                // Có lỗi -> Rollback toàn bộ (Không trừ kho, không tạo đơn)
                 await transaction.RollbackAsync();
                 throw;
             }
@@ -229,9 +235,9 @@ namespace webnhom5.Services
                 FinalAmount = o.FinalAmount,
                 OrderDetails = o.OrderDetails.Select(d => new OrderDetailDto
                 {
-                    ProductName = d.Snapshot_ProductName, // Lấy từ Snapshot
-                    Sku = d.Snapshot_Sku,
-                    Thumbnail = d.Snapshot_Thumbnail,
+                    ProductName = d.SnapshotProductName,
+                    Sku = d.SnapshotSku,
+                    Thumbnail = d.SnapshotThumbnail,
                     Quantity = d.Quantity,
                     UnitPrice = d.UnitPrice
                 }).ToList(),
@@ -245,7 +251,7 @@ namespace webnhom5.Services
             };
         }
 
-        // --- 4. STATE MACHINE (MÁY TRẠNG THÁI) ---
+        // --- 4. STATE MACHINE ---
         public async Task UpdateOrderStatusAsync(int orderId, int newStatus, string? note, string updatedBy)
         {
             var order = await _context.Orders.FindAsync(orderId);
@@ -253,24 +259,16 @@ namespace webnhom5.Services
 
             int oldStatus = order.Status ?? 0;
 
-            // Logic chặn nhảy cóc trạng thái
-            // 0: Pending -> 1: Confirmed
-            // 1: Confirmed -> 2: Shipping
-            // 2: Shipping -> 3: Completed OR 5: Failed
-            // 4: Canceled (Hủy được khi chưa Shipping)
-            
             bool isValid = false;
-            if (newStatus == 4 && oldStatus < 2) isValid = true; // Hủy khi chưa giao
-            else if (newStatus == oldStatus + 1 && oldStatus < 3) isValid = true; // Đi tiếp 1 bước
-            else if (oldStatus == 2 && newStatus == 5) isValid = true; // Giao thất bại
+            if (newStatus == 4 && oldStatus < 2) isValid = true;
+            else if (newStatus == oldStatus + 1 && oldStatus < 3) isValid = true;
+            else if (oldStatus == 2 && newStatus == 5) isValid = true;
 
             if (!isValid) throw new Exception($"Không thể chuyển trạng thái từ {GetStatusName(oldStatus)} sang {GetStatusName(newStatus)}");
 
-            // Update
             order.Status = newStatus;
-            
-            // Log History
-            _context.OrderStatusHistory.Add(new OrderStatusHistory
+
+            _context.OrderStatusHistories.Add(new OrderStatusHistory
             {
                 OrderId = order.Id,
                 PreviousStatus = oldStatus,
@@ -287,10 +285,10 @@ namespace webnhom5.Services
         public async Task<List<RevenueStatisticDto>> GetDailyRevenueAsync(int days)
         {
             var fromDate = DateTime.Now.AddDays(-days);
-            
+
             var stats = await _context.Orders
                 .Where(o => o.OrderDate >= fromDate && o.Status == 3) // Chỉ tính đơn thành công
-                .GroupBy(o => o.OrderDate.Value.Date)
+                .GroupBy(o => o.OrderDate.Value.Date) // Gom nhóm theo ngày (bỏ giờ phút)
                 .Select(g => new RevenueStatisticDto
                 {
                     Date = g.Key.ToString("dd/MM/yyyy"),
@@ -314,6 +312,22 @@ namespace webnhom5.Services
                 5 => "Giao thất bại",
                 _ => "Không xác định"
             };
+        }
+        public async Task<List<OrderResponseDto>> GetMyOrdersAsync(int userId)
+        {
+            return await _context.Orders
+                .Where(o => o.UserId == userId)
+                .OrderByDescending(o => o.OrderDate)
+                .Select(o => new OrderResponseDto
+                {
+                    Id = o.Id,
+                    OrderCode = o.OrderCode,
+                    OrderDate = o.OrderDate ?? DateTime.Now,
+                    Status = GetStatusName(o.Status ?? 0), // Hàm GetStatusName em đã có sẵn ở dưới
+                    TotalAmount = o.TotalAmount,
+                    FinalAmount = o.FinalAmount,
+                    PaymentMethod = o.PaymentMethod
+                }).ToListAsync();
         }
     }
 }
