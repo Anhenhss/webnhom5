@@ -376,6 +376,20 @@ namespace webnhom5.Services
         }
 
         private string GenerateSlug(string name) => name.ToLower().Replace(" ", "-").Replace("đ", "d");
-        
+        public async Task<List<ReviewResponseDto>> GetReviewsByProductIdAsync(int productId)
+        {
+            return await _context.ProductReviews
+                .Include(r => r.User)
+                .Where(r => r.ProductId == productId)
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new ReviewResponseDto
+                {
+                    Id = r.Id,
+                    Rating = r.Rating ?? 5,
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt,
+                    UserName = r.User.FullName // Lấy tên khách hàng
+                }).ToListAsync();
+        }
     }
 }

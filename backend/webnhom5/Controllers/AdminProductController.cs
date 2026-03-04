@@ -5,7 +5,7 @@ using webnhom5.Services;
 
 namespace webnhom5.Controllers
 {
-    [Route("api/products")] 
+    [Route("api/products")]
     [ApiController]
     public class AdminProductController : ControllerBase
     {
@@ -15,7 +15,7 @@ namespace webnhom5.Controllers
         // KHU VỰC PUBLIC (AI CŨNG XEM ĐƯỢC)
         [HttpGet]
         [AllowAnonymous] // <--- Khách không cần login vẫn xem được hàng
-        public async Task<IActionResult> GetAll() 
+        public async Task<IActionResult> GetAll()
             => Ok(await _service.GetAllProductsAsync());
 
         [HttpGet("{id}")]
@@ -52,12 +52,12 @@ namespace webnhom5.Controllers
         [HttpGet("master-data/sizes")]
         [AllowAnonymous]
         public async Task<IActionResult> GetSizes() => Ok(await _service.GetSizesAsync());
-        
+
         [HttpPost("colors")]
         [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> AddColor([FromBody] MasterDataDto dto)
         {
-            try 
+            try
             {
                 // Controller chỉ việc gọi Service và nhận kết quả
                 int newId = await _service.AddColorAsync(dto);
@@ -73,7 +73,7 @@ namespace webnhom5.Controllers
         [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> AddSize([FromBody] MasterDataDto dto)
         {
-            try 
+            try
             {
                 int newId = await _service.AddSizeAsync(dto);
                 return Ok(new { message = "Thêm kích thước thành công", id = newId });
@@ -88,7 +88,7 @@ namespace webnhom5.Controllers
         [Authorize(Roles = "Admin,Staff")] // <--- Chặn khách
         public async Task<IActionResult> CreateProduct([FromForm] CreateProductDto dto)
         {
-            try 
+            try
             {
                 var result = await _service.CreateProductAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
@@ -149,7 +149,7 @@ namespace webnhom5.Controllers
                 var variant = await _service.CreateVariantAsync(dto);
                 return Ok(variant);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
@@ -183,6 +183,13 @@ namespace webnhom5.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+        [HttpGet("{productId}/reviews")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetReviews(int productId)
+        {
+            var reviews = await _service.GetReviewsByProductIdAsync(productId);
+            return Ok(reviews);
         }
     }
 }

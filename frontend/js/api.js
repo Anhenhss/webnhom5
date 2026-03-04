@@ -212,3 +212,71 @@ function executeGlobalSearch(keyword) {
         window.location.href = `shop.html?search=${encodeURIComponent(trimmedKeyword)}`;
     }
 }
+// ==========================================================================
+// RENDER MENU TÀI KHOẢN & ĐĂNG XUẤT LÊN HEADER
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    renderUserMenu(); // Tự động chạy khi load mọi trang web
+});
+
+function renderUserMenu() {
+    const container = document.getElementById('user-menu-container');
+    if (!container) return;
+
+    // Kiểm tra xem khách đã đăng nhập chưa (Kiểm tra token)
+    if (authManager.isLoggedIn()) {
+        const userInfoStr = localStorage.getItem('userInfo');
+        let userName = "Thành viên";
+        let role = "Customer";
+
+        // Lấy tên để chào
+        if (userInfoStr) {
+            try {
+                const userInfo = JSON.parse(userInfoStr);
+                userName = userInfo.fullName || "Thành viên";
+                role = userInfo.role || "Customer";
+            } catch (e) {}
+        }
+
+        // Nếu là Admin/Staff thì hiện thêm link vào Trang Quản Trị
+        let adminLink = '';
+        if (role === 'Admin' || role === 'Staff') {
+            adminLink = `<a href="admin-dashboard.html"><i class="ph ph-shield-check"></i> Quản trị hệ thống</a>`;
+        }
+
+        // Đổ HTML menu xổ xuống vào Header (Biến icon rỗng thành icon tô đậm ph-fill)
+        container.innerHTML = `
+            <a href="#" class="icon-link"><i class="ph-fill ph-user" style="color: var(--color-accent-light)"></i></a>
+            <div class="user-menu-dropdown">
+                <div class="user-name-display">Xin chào, ${userName}</div>
+                ${adminLink}
+                <a href="#"><i class="ph ph-receipt"></i> Đơn mua của tôi</a>
+                <a href="#"><i class="ph ph-user-circle"></i> Hồ sơ tài khoản</a>
+                <button class="btn-logout" onclick="handleGlobalLogout()">
+                    <i class="ph ph-sign-out"></i> Đăng xuất
+                </button>
+            </div>
+        `;
+    } else {
+        // Nếu chưa đăng nhập, giữ nguyên nút link tới trang login
+        container.innerHTML = `<a href="login.html" class="icon-link"><i class="ph ph-user"></i></a>`;
+    }
+}
+
+// Hàm Xử lý Đăng xuất toàn cục
+function handleGlobalLogout() {
+    // 1. Xóa Token
+    authManager.clear();
+    // 2. Xóa thông tin User
+    localStorage.removeItem('userInfo');
+    
+    // 3. (Tùy chọn) Xóa giỏ hàng nếu muốn: localStorage.removeItem('webnhom5_cart');
+
+    // 4. Báo thành công
+    showToast("Đã đăng xuất thành công!", "success");
+
+    // 5. Đá văng về trang chủ sau 1 giây
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 1000);
+}

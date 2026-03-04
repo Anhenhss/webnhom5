@@ -357,12 +357,13 @@ function renderProductsForCurrentPage() {
         const card = `
             <div class="product-card" onclick="window.location.href='product-detail.html?id=${p.id}'">
                 <div class="product-image">
-                    <img src="${imgUrl}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/400x533?text=No+Image'">
+                    <img src="${imgUrl}" alt="${p.name}" onerror="this.src='image/placeholder.jpg'">
                 </div>
                 <div class="product-info">
                     <div class="product-brand">${p.categoryName || 'WebNhom5 Exclusive'}</div>
                     <h4 class="product-name" title="${p.name}">${p.name}</h4>
                     <div class="product-price">${new Intl.NumberFormat('vi-VN').format(p.price)} ₫</div>
+                    <div style="font-size:0.8rem; color:#888; margin-top:5px;">Đã bán ${p.soldCount || 0}</div>
                 </div>
             </div>
         `;

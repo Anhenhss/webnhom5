@@ -27,7 +27,7 @@
 <body>
     <header class="site-header">
         <div class="logo-wrapper">
-            <img src="image/logo.jpg" alt="Logo" onerror="this.src='https://ui-avatars.com/api/?name=W5&background=003049&color=fff'">
+            <img src="image/logo.png" alt="Logo" onerror="this.src='https://ui-avatars.com/api/?name=W5&background=003049&color=fff'">
             <span class="brand-name">WebNhom5</span>
         </div>
         <nav class="main-nav">
@@ -38,9 +38,13 @@
         <div class="header-actions">
             <div class="search-box">
                 <input type="text" id="global-search-input" placeholder="Tìm kiếm sản phẩm...">
-                <i class="ph ph-magnifying-glass" id="global-search-btn"></i>
+                <i class="ph ph-magnifying-glass" id="global-search-btn" style="cursor: pointer;"></i>
             </div>
             <a href="cart.html" class="icon-link"><i class="ph ph-shopping-bag"></i></a>
+            
+            <div class="user-menu-container" id="user-menu-container">
+                <a href="login.html" class="icon-link"><i class="ph ph-user"></i></a>
+            </div>
         </div>
     </header>
 
@@ -86,12 +90,25 @@
 
     <footer class="site-footer">
         <div class="footer-content">
-            <div class="footer-col"><h4>WebNhom5</h4><p>Nâng tầm phong cách với sự tinh tế và thanh lịch.</p></div>
+            <div class="footer-col">
+                <h4>WebNhom5</h4>
+                <p>Nâng tầm phong cách với sự tinh tế và thanh lịch.</p>
+            </div>
             <div class="footer-col">
                 <h4>Hỗ trợ khách hàng</h4>
-                <ul><li><a href="return-policy.html" style="color:#FFF;">Chính sách đổi trả</a></li><li><a href="size-guide.html">Hướng dẫn chọn size</a></li></ul>
+                <ul>
+                    <li><a href="return-policy.html">Chính sách đổi trả</a></li>
+                    <li><a href="size-guide.html">Hướng dẫn chọn size</a></li>
+                </ul>
             </div>
-            <div class="footer-col"><h4>Liên hệ</h4><p>Email: hotro@webnhom5.com</p><p>Hotline: 1900 xxxx</p></div>
+            <div class="footer-col">
+                <h4>Liên hệ</h4>
+                <p>Email: hotro@webnhom5.com</p>
+                <p>Hotline: 1900 xxxx</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 WebNhom5. Đồ án môn học Ứng dụng Web.</p>
         </div>
     </footer>
     <script src="js/api.js"></script>

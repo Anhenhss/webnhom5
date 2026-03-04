@@ -27,7 +27,7 @@ async function loadProductDetail(id) {
         document.getElementById('bc-name').innerText = currentProduct.name;
         document.getElementById('bc-category').innerText = currentProduct.categoryName || 'Sản phẩm';
         document.getElementById('pd-desc').innerHTML = currentProduct.description ? currentProduct.description.replace(/\n/g, '<br>') : "Sản phẩm thiết kế độc quyền của WebNhom5.";
-        
+        document.getElementById('pd-sold-count').innerText = currentProduct.soldCount || 0;
         // Render Giá (Lấy giá gốc mặc định)
         updatePriceDisplay(currentProduct.price);
 
@@ -36,6 +36,7 @@ async function loadProductDetail(id) {
 
         // Render Biến thể (Màu và Size)
         renderVariants(currentProduct.variants);
+        loadReviews(currentProduct.id);
         loadRelatedProducts(currentProduct.categoryId, currentProduct.id);
 
     } catch (error) {
@@ -323,7 +324,7 @@ async function loadRelatedProducts(categoryId, currentProductId) {
             const card = `
                 <div class="product-card" onclick="window.location.href='product-detail.html?id=${p.id}'">
                     <div class="product-image">
-                        <img src="${imgUrl}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/400x533?text=No+Image'">
+                        <img src="${imgUrl}" alt="${p.name}" onerror="this.src='image/placeholder.jpg'">
                     </div>
                     <div class="product-info">
                         <div class="product-brand">${p.categoryName || 'WebNhom5 Exclusive'}</div>
@@ -337,5 +338,70 @@ async function loadRelatedProducts(categoryId, currentProductId) {
 
     } catch (error) {
         console.error("Lỗi tải SP liên quan:", error);
+    }
+}
+// ==========================================
+// 6. XỬ LÝ ĐÁNH GIÁ (REVIEWS)
+// ==========================================
+async function loadReviews(productId) {
+    try {
+        const reviews = await apiFetch(`/products/${productId}/reviews`).catch(() => []);
+        
+        const listContainer = document.getElementById('review-list');
+        const summaryStars = document.getElementById('pd-rating-summary');
+        const avgStarsDisplay = document.getElementById('avg-stars-display');
+        
+        if (!reviews || reviews.length === 0) {
+            listContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 30px 0;">Sản phẩm này chưa có đánh giá nào. Hãy là người đầu tiên sở hữu và đánh giá nhé!</p>';
+            summaryStars.innerHTML = '<span style="color:var(--text-muted); font-size: 0.9rem;">Chưa có đánh giá</span>';
+            return;
+        }
+
+        // Tính điểm trung bình
+        let totalScore = 0;
+        reviews.forEach(r => totalScore += r.rating);
+        let avgScore = (totalScore / reviews.length).toFixed(1);
+
+        // Cập nhật text tổng quan
+        document.getElementById('avg-rating-text').innerText = avgScore;
+        document.getElementById('total-reviews-text').innerText = `${reviews.length} đánh giá`;
+
+        // Hàm vẽ ngôi sao vàng/xám
+        const drawStars = (score) => {
+            let starsHtml = '';
+            for(let i=1; i<=5; i++) {
+                if(i <= Math.round(score)) starsHtml += '<i class="ph-fill ph-star"></i>';
+                else starsHtml += '<i class="ph ph-star" style="color:#CCC;"></i>';
+            }
+            return starsHtml;
+        };
+
+        // Cập nhật sao ở 2 chỗ (Trên đầu và dưới summary)
+        summaryStars.innerHTML = drawStars(avgScore) + `<span style="color:var(--text-main); font-size:1rem; margin-left:5px;">(${avgScore})</span>`;
+        avgStarsDisplay.innerHTML = drawStars(avgScore);
+
+        // Vẽ danh sách Comment
+        listContainer.innerHTML = '';
+        reviews.forEach(r => {
+            let dateStr = new Date(r.createdAt).toLocaleDateString('vi-VN');
+            // Lấy chữ cái đầu của tên làm Avatar
+            let initial = r.userName ? r.userName.charAt(0).toUpperCase() : 'U';
+            
+            let html = `
+                <div class="review-item">
+                    <div class="review-avatar">${initial}</div>
+                    <div class="review-content">
+                        <div class="review-user">${r.userName || 'Khách hàng ẩn danh'}</div>
+                        <div class="review-stars">${drawStars(r.rating)}</div>
+                        <div class="review-date">${dateStr} | Phân loại hàng: Mặc định</div>
+                        <div class="review-text">${r.comment || 'Khách hàng không để lại bình luận.'}</div>
+                    </div>
+                </div>
+            `;
+            listContainer.insertAdjacentHTML('beforeend', html);
+        });
+
+    } catch (error) {
+        console.error("Lỗi tải đánh giá:", error);
     }
 }

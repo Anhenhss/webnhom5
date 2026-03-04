@@ -50,6 +50,14 @@
 
             <div class="pd-info">
                 <h1 class="pd-title" id="pd-name">Đang tải tên sản phẩm...</h1>
+                
+                <div class="pd-meta">
+                    <div class="pd-rating" id="pd-rating-summary">
+                        <span style="color:var(--text-muted); font-size: 0.9rem;">Chưa có đánh giá</span>
+                    </div>
+                    <div class="pd-sold">Đã bán <strong id="pd-sold-count">0</strong></div>
+                </div>
+
                 <div class="pd-price" id="pd-price">0₫</div>
                 
                 <div class="divider"></div>
@@ -62,7 +70,7 @@
                 <div class="variant-section" id="section-size" style="display: none;">
                     <h4 class="variant-title">Kích thước: <span id="selected-size-name" class="selected-label">Chưa chọn</span></h4>
                     <div class="variant-grid" id="size-grid"></div>
-                    <a href="#" class="size-guide-link">Hướng dẫn chọn size</a>
+                    <a href="size-guide.html" class="size-guide-link">Hướng dẫn chọn size</a>
                 </div>
 
                 <div class="stock-status" id="stock-status">
@@ -94,7 +102,23 @@
                 Mô tả sản phẩm đang được cập nhật...
             </div>
         </div>
-
+        <div class="pd-full-section">
+            <h2 class="section-title">ĐÁNH GIÁ SẢN PHẨM</h2>
+            
+            <div class="review-container">
+                <div class="review-summary-box">
+                    <div class="avg-score"><span id="avg-rating-text">5.0</span>/5</div>
+                    <div class="avg-stars" id="avg-stars-display">
+                        <i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i>
+                    </div>
+                    <p id="total-reviews-text">0 đánh giá</p>
+                </div>
+                
+                <div class="review-list" id="review-list">
+                    <p style="text-align: center; color: var(--text-muted);">Đang tải đánh giá...</p>
+                </div>
+            </div>
+        </div>
         <div class="pd-full-section">
             <h2 class="section-title">CÓ THỂ BẠN SẼ THÍCH</h2>
             <div class="product-grid" id="related-product-grid">

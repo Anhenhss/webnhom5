@@ -30,5 +30,6 @@ namespace webnhom5.Services
         Task<int> AddColorAsync(MasterDataDto dto);
         Task<int> AddSizeAsync(MasterDataDto dto);
         Task<bool> ToggleProductStatusAsync(int id);
+        Task<List<ReviewResponseDto>> GetReviewsByProductIdAsync(int productId);
     }
 }

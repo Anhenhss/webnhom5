@@ -99,4 +99,20 @@ namespace webnhom5.DTOs
         public string Name { get; set; } = null!;
         public string? HexCode { get; set; } // Dùng cho màu sắc, có thể null đối với Size
     }
+    public class ReviewResponseDto
+    {
+        public int Id { get; set; }
+        public int Rating { get; set; }
+        public string? Comment { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public string UserName { get; set; } = null!; // Tên người đánh giá
+    }
+
+    public class CreateReviewDto
+    {
+        public int ProductId { get; set; }
+        public int OrderId { get; set; } // Phải có đơn hàng mới được đánh giá
+        public int Rating { get; set; }
+        public string? Comment { get; set; }
+    }
 }

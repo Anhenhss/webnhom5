@@ -240,3 +240,78 @@
        font-size: 0.9rem;
        color: #ccc;
    }
+   /* ================== MENU TÀI KHOẢN (ĐĂNG XUẤT) ================== */
+.user-menu-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.user-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: -10px; /* Căn mép phải để không bị tràn ra ngoài màn hình */
+    background: #FFF;
+    box-shadow: var(--shadow-md);
+    border-radius: 8px;
+    min-width: 200px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(15px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    padding: 10px 0;
+    border-top: 3px solid var(--color-primary);
+}
+
+/* Khi hover vào container thì hiện menu */
+.user-menu-container:hover .user-menu-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(10px);
+}
+
+.user-name-display {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid #EEE;
+    margin-bottom: 5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-menu-dropdown a, 
+.user-menu-dropdown button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 12px 20px;
+    color: var(--text-main);
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s;
+    text-decoration: none;
+}
+
+.user-menu-dropdown a:hover, 
+.user-menu-dropdown button:hover {
+    color: var(--color-accent-light);
+    background: var(--color-bg-sub);
+    padding-left: 25px; /* Hiệu ứng lướt sang phải */
+}
+
+/* Tô màu đỏ riêng cho nút Đăng xuất */
+.btn-logout {
+    color: var(--color-accent-dark) !important;
+}
+.btn-logout i { font-weight: bold; }
