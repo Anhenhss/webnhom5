@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Nhân sự | WebNhom5</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/admin-users.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo">
+                <img src="image/logo.png" alt="WebNhom5">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Tổng quan</a>
+                <a href="admin-orders.html" class="nav-item"><i class="ph ph-receipt"></i> Đơn hàng</a>
+                <a href="admin-products.html" class="nav-item"><i class="ph ph-package"></i> Sản phẩm</a>
+                <a href="admin-categories.html" class="nav-item"><i class="ph ph-list-dashes"></i> Danh mục</a>
+                <a href="admin-users.html" class="nav-item active"><i class="ph-fill ph-users"></i> Quản trị Hệ thống</a>
+                <a href="admin-marketing.html" class="nav-item"><i class="ph ph-tag"></i> Khuyến mãi</a>
+                <a href="admin-reports.html" class="nav-item"><i class="ph ph-chart-line-up"></i> Báo cáo doanh thu</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="index.html" class="nav-item back-to-store"><i class="ph ph-storefront"></i> Về cửa hàng</a>
+            </div>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <div class="topbar-search">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" id="user-search-input" placeholder="Tìm tên hoặc email...">
+                </div>
+                <div class="topbar-profile">
+                    <div class="profile-info">
+                        <img src="" class="avatar" id="admin-avatar">
+                        <span class="admin-name" id="display-admin-name">Đang tải...</span>
+                    </div>
+                    <button class="btn-logout" onclick="logout()"><i class="ph ph-sign-out"></i></button>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header-flex">
+                    <h1 class="page-title">Quản trị Hệ thống</h1>
+                    <button class="btn btn-primary" onclick="openAddUserModal()">
+                        <i class="ph ph-user-plus"></i> Thêm tài khoản
+                    </button>
+                </div>
+
+                <div class="user-tabs">
+                    <button class="tab-item active" onclick="switchUserTab('Customer', event)">
+                        <i class="ph ph-users"></i> Khách hàng (<span id="cnt-Customer">0</span>)
+                    </button>
+                    <button class="tab-item" onclick="switchUserTab('Staff', event)">
+                        <i class="ph ph-identification-badge"></i> Nhân viên (<span id="cnt-Staff">0</span>)
+                    </button>
+                    <button class="tab-item" onclick="switchUserTab('Admin', event)">
+                        <i class="ph ph-shield-check"></i> Quản trị viên (<span id="cnt-Admin">0</span>)
+                    </button>
+                </div>
+
+                <div class="table-wrapper user-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Người dùng</th>
+                                <th>Email / SĐT</th>
+                                <th>Quyền hạn</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody"></tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="add-user-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Tạo tài khoản mới</h2>
+                <button class="btn-close" onclick="closeAddUserModal()"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-user-form" onsubmit="submitAddUser(event)">
+                    <div class="form-group">
+                        <label>Họ và tên *</label>
+                        <input type="text" id="add-fullname" class="form-control" required placeholder="Nguyễn Văn A">
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="add-email" class="form-control" required placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Mật khẩu *</label>
+                        <input type="password" id="add-password" class="form-control" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>Vai trò *</label>
+                        <select id="add-role" class="form-control">
+                            <option value="Customer">Khách hàng</option>
+                            <option value="Staff" selected>Nhân viên</option>
+                            <option value="Admin">Quản trị viên</option>
+                        </select>
+                    </div>
+                    <div style="margin-top: 20px; text-align: right;">
+                        <button type="button" class="btn btn-outline" onclick="closeAddUserModal()">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Tạo tài khoản</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/admin-users.js"></script>
+</body>
+</html>
