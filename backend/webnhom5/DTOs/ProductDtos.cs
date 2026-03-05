@@ -27,6 +27,7 @@ namespace webnhom5.DTOs
 
         public IFormFile? ThumbnailFile { get; set; }
         public List<IFormFile>? GalleryFiles { get; set; }
+        public List<CreateVariantDto>? Variants { get; set; }
     }
 
     // DTO cho việc cập nhật sản phẩm
@@ -42,6 +43,7 @@ namespace webnhom5.DTOs
         public IFormFile? ThumbnailFile { get; set; }
         // Các ảnh phụ muốn thêm mới
         public List<IFormFile>? NewGalleryFiles { get; set; }
+        public List<CreateVariantDto>? Variants { get; set; }
     }
 
     public class ProductResponseDto
@@ -61,13 +63,14 @@ namespace webnhom5.DTOs
         public int SoldCount { get; set; } // Số lượng đã bán (Tính từ OrderDetails)
 
         // Tổng tồn kho: Tính tổng Quantity của tất cả Variants cộng lại
-        public int TotalStock => Variants != null ? Variants.Sum(v => v.Quantity) : 0;
+        // XÓA dòng cũ và thay bằng dòng này:
+        public int TotalStock { get; set; }
     }
 
     // --- 3. VARIANT DTOs ---
     public class CreateVariantDto
     {
-        [Required] public int ProductId { get; set; }
+        public int ProductId { get; set; }
         [Required] public int ColorId { get; set; }
         [Required] public int SizeId { get; set; }
         [Required] public string Sku { get; set; } = null!;

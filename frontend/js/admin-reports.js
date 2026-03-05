@@ -8,8 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('display-admin-name').innerText = `Quản trị viên (${userInfo.fullName})`;
-    document.getElementById('admin-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userInfo.fullName)}&background=003049&color=fff`;
-
+    
     loadReportData();
 });
 

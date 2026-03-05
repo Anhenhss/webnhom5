@@ -77,7 +77,7 @@ namespace webnhom5.Controllers
             {
                 // Gọi hàm từ Service thay vì gọi trực tiếp Database
                 var result = await _userService.CreateAccountAsync(dto);
-                
+
                 if (result)
                 {
                     return Ok(new { message = "Tạo tài khoản thành công!" });
@@ -87,6 +87,35 @@ namespace webnhom5.Controllers
             catch (Exception ex)
             {
                 // Exception từ Service (như email tồn tại) sẽ được bắt ở đây
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDto dto)
+        {
+            try
+            {
+                var result = await _userService.UpdateUserAsync(id, dto);
+                return Ok(new { message = "Đã cập nhật thông tin thành công!", user = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            try
+            {
+                await _userService.DeleteUserAsync(id);
+                return Ok(new { message = "Đã xóa người dùng thành công!" });
+            }
+            catch (Exception ex)
+            {
                 return BadRequest(new { message = ex.Message });
             }
         }

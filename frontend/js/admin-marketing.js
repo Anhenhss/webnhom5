@@ -10,11 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const roleTitle = userInfo.role === 'Admin' ? "Quản trị viên" : "Nhân viên";
     document.getElementById('display-admin-name').innerText = `${roleTitle} (${userInfo.fullName})`;
 
-    const avatarElem = document.getElementById('admin-avatar');
-    if (avatarElem) {
-        // Tự động tạo ảnh đại diện theo tên (UI Avatars)
-        avatarElem.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=003049&color=fff`;
-    }
 
     loadPromotions();
 });
@@ -57,9 +52,14 @@ function renderPromoTable(promos) {
                 <td>${start.toLocaleDateString()} - ${end.toLocaleDateString()}</td>
                 <td>${statusHtml}</td>
                 <td>
-                    <button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem" onclick="openGenModal(${p.id})">
-                        <i class="ph ph-ticket"></i> Sinh mã
-                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem" onclick="openGenModal(${p.id})">
+                            <i class="ph ph-ticket"></i> Sinh mã
+                        </button>
+                        <button class="btn-icon-sm text-danger" onclick="deletePromo(${p.id}, '${p.name}')" style="background:none; border:none; cursor:pointer; font-size:1.1rem; padding:4px;" title="Xóa chương trình">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -111,5 +111,20 @@ async function submitGenerateCoupons(event) {
         closeCouponModal();
     } catch (error) {}
 }
-
-function logout() { authManager.clear(); window.location.href = 'login.html'; }
+/* --- XỬ LÝ XÓA KHUYẾN MÃI --- */
+function deletePromo(id, name) {
+    showConfirmModal(
+        "Xóa Chương Trình?", 
+        `Bạn có chắc chắn muốn xóa chương trình <strong>"${name}"</strong> không?<br><br><small style="color:var(--color-accent-dark)">Lưu ý: Không thể xóa nếu chương trình đã phát hành mã Coupon cho khách.</small>`, 
+        "Đồng ý Xóa", 
+        async () => {
+            try {
+                await apiFetch(`/admin/promotions/${id}`, { method: 'DELETE' });
+                showToast(`Đã xóa chương trình "${name}"`, "success");
+                loadPromotions(); // Tải lại bảng
+            } catch (error) {
+                // Lỗi (ví dụ đã có coupon) sẽ tự văng Toast đỏ nhờ api.js
+            }
+        }
+    );
+}

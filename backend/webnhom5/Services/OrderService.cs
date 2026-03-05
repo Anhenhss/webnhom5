@@ -77,13 +77,22 @@ namespace webnhom5.Services
                 }).ToListAsync();
         }
 
-        public async Task RemoveFromCartAsync(int userId, int cartItemId)
+        public async Task RemoveFromCartAsync(int userId, int itemId)
         {
-            var item = await _context.CartItems.FirstOrDefaultAsync(c => c.Id == cartItemId && c.UserId == userId);
-            if (item != null)
+            // Tìm chính xác dòng trong Giỏ hàng có Khóa chính (Id) là itemId 
+            // VÀ phải thuộc về đúng người dùng đang đăng nhập (userId) để chống hack
+            var cartItem = await _context.CartItems
+                .FirstOrDefaultAsync(c => c.Id == itemId && c.UserId == userId);
+
+            if (cartItem != null)
             {
-                _context.CartItems.Remove(item);
+                _context.CartItems.Remove(cartItem);
                 await _context.SaveChangesAsync();
+            }
+            else
+            {
+                // Nếu không tìm thấy, quăng lỗi ra để Frontend báo đỏ!
+                throw new Exception("Không tìm thấy sản phẩm này trong giỏ hàng!");
             }
         }
 

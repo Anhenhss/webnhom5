@@ -14,6 +14,22 @@ namespace webnhom5.DTOs
         public string? GoogleId { get; set; }
     }
 
+    public class UpdateUserDto
+    {
+        [Required(ErrorMessage = "Vui lòng nhập họ tên")] 
+        public string FullName { get; set; } = null!;
+
+        [Required(ErrorMessage = "Vui lòng nhập email")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
+        public string Email { get; set; } = null!;
+
+        // Password cho phép Null vì khi Sửa, người dùng có thể không muốn đổi pass
+        public string? Password { get; set; }
+
+        [Required] 
+        public string Role { get; set; } = null!;
+    }
+
     public class CreateAddressDto
     {
         [Required] public string ContactName { get; set; } = null!;

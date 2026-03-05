@@ -3,6 +3,9 @@ let selectedColorId = null;
 let selectedSizeId = null;
 let currentVariant = null;
 
+// Thêm biến BACKEND_URL (vì em đang dùng trong code nhưng chưa khai báo ở đầu file này)
+const BACKEND_URL = 'http://localhost:5195';
+
 document.addEventListener('DOMContentLoaded', () => {
     // Lấy ID sản phẩm từ trên URL (Ví dụ: product-detail.html?id=5)
     const urlParams = new URLSearchParams(window.location.search);
@@ -18,35 +21,48 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // 1. TẢI DỮ LIỆU SẢN PHẨM & RENDER
 // ==========================================
+let masterColorsList = []; // Thêm biến này ở đầu file cùng với currentProduct
+
 async function loadProductDetail(id) {
     try {
+        // Tải danh sách màu để lấy mã Hex
+        masterColorsList = await apiFetch('/products/master-data/colors').catch(() => []);
         currentProduct = await apiFetch(`/products/${id}`);
         
-        // Render Text cơ bản
+        if (!currentProduct) throw new Error("Sản phẩm không tồn tại");
+
         document.getElementById('pd-name').innerText = currentProduct.name;
         document.getElementById('bc-name').innerText = currentProduct.name;
         document.getElementById('bc-category').innerText = currentProduct.categoryName || 'Sản phẩm';
-        document.getElementById('pd-desc').innerHTML = currentProduct.description ? currentProduct.description.replace(/\n/g, '<br>') : "Sản phẩm thiết kế độc quyền của WebNhom5.";
+        document.getElementById('pd-desc').innerHTML = currentProduct.description 
+            ? currentProduct.description.replace(/\n/g, '<br>') 
+            : "Sản phẩm thiết kế độc quyền.";
         document.getElementById('pd-sold-count').innerText = currentProduct.soldCount || 0;
-        // Render Giá (Lấy giá gốc mặc định)
+        
         updatePriceDisplay(currentProduct.price);
-
-        // Render Hình ảnh (Thumbnail + Gallery)
         renderGallery(currentProduct);
-
-        // Render Biến thể (Màu và Size)
         renderVariants(currentProduct.variants);
+        
         loadReviews(currentProduct.id);
         loadRelatedProducts(currentProduct.categoryId, currentProduct.id);
 
+        // HIỂN THỊ FORM ĐÁNH GIÁ NẾU ĐÃ ĐĂNG NHẬP
+        if (authManager.isLoggedIn()) {
+            document.getElementById('write-review-box').style.display = 'block';
+            initStarRating(); // Khởi tạo logic click ngôi sao
+        }
+
     } catch (error) {
-        showToast("Không tìm thấy sản phẩm. Đang quay lại cửa hàng...", "error");
+        showToast("Không tìm thấy sản phẩm.", "error");
         setTimeout(() => window.location.href = 'shop.html', 2000);
     }
 }
 
 function updatePriceDisplay(priceValue) {
-    document.getElementById('pd-price').innerText = new Intl.NumberFormat('vi-VN').format(priceValue) + '₫';
+    const priceEl = document.getElementById('pd-price');
+    if (priceEl) {
+        priceEl.innerText = new Intl.NumberFormat('vi-VN').format(priceValue) + '₫';
+    }
 }
 
 // ==========================================
@@ -55,15 +71,14 @@ function updatePriceDisplay(priceValue) {
 function renderGallery(product) {
     const mainImg = document.getElementById('main-image');
     const thumbList = document.getElementById('thumbnail-list');
-    
-    // Xử lý link ảnh gốc (Thumbnail)
+    if (!mainImg || !thumbList) return;
+
     let defaultImg = 'image/placeholder.jpg';
     if (product.thumbnail) {
         defaultImg = product.thumbnail.startsWith('http') ? product.thumbnail : BACKEND_URL + product.thumbnail;
     }
     mainImg.src = defaultImg;
     
-    // Gộp Thumbnail và ImageUrls lại thành 1 mảng để duyệt
     let allImages = [defaultImg];
     if (product.imageUrls && product.imageUrls.length > 0) {
         product.imageUrls.forEach(img => {
@@ -71,7 +86,6 @@ function renderGallery(product) {
         });
     }
 
-    // Vẽ danh sách ảnh nhỏ
     thumbList.innerHTML = '';
     allImages.forEach((imgSrc, index) => {
         const thumbHtml = `
@@ -84,54 +98,60 @@ function renderGallery(product) {
 }
 
 function changeMainImage(src, element) {
-    document.getElementById('main-image').src = src;
-    // Đổi viền active
+    const mainImg = document.getElementById('main-image');
+    if (mainImg) mainImg.src = src;
+    
     document.querySelectorAll('.thumb-item').forEach(el => el.classList.remove('active'));
-    element.classList.add('active');
+    if (element) element.classList.add('active');
 }
 
 // ==========================================
 // 3. RENDER VÀ XỬ LÝ LỌC BIẾN THỂ
 // ==========================================
 function renderVariants(variants) {
+    const stockStatus = document.getElementById('stock-status');
+    const sectionColor = document.getElementById('section-color');
+    const sectionSize = document.getElementById('section-size');
+
     if (!variants || variants.length === 0) {
-        document.getElementById('stock-status').innerHTML = '<span style="color:var(--color-accent-dark)">Sản phẩm hiện đang hết hàng.</span>';
+        if(stockStatus) stockStatus.innerHTML = '<span style="color:var(--color-accent-dark)">Sản phẩm hiện đang hết hàng.</span>';
         return;
     }
 
-    // Lọc ra các Màu và Size ĐỘC NHẤT (Không trùng lặp) từ danh sách biến thể
+    // Lọc ra các Màu và Size (Khử trùng lặp)
     let colorsMap = new Map();
     let sizesMap = new Map();
 
-    // Giả định backend trả về ColorName, SizeName. (Cần lấy thêm HexCode nếu em muốn, ở đây tạm dùng tên)
-    // Nếu backend truyền Color.HexCode trong VariantResponseDto thì càng tốt!
     variants.forEach(v => {
-        if (v.colorId > 0 && v.colorName !== "Không áp dụng") {
-            colorsMap.set(v.colorId, { id: v.colorId, name: v.colorName });
+        if (v.colorId && v.colorId > 0 && v.colorName !== "Không áp dụng") {
+            // Tìm mã Hex tương ứng
+            let hexObj = masterColorsList.find(c => c.id === v.colorId);
+            let hex = hexObj ? hexObj.hexCode : '#EEEEEE';
+            colorsMap.set(v.colorId, { id: v.colorId, name: v.colorName, hex: hex });
         }
-        if (v.sizeId > 0 && v.sizeName !== "Không áp dụng") {
+        if (v.sizeId && v.sizeId > 0 && v.sizeName !== "Không áp dụng") {
             sizesMap.set(v.sizeId, { id: v.sizeId, name: v.sizeName });
         }
     });
 
-    // VẼ MÀU SẮC
-    if (colorsMap.size > 0) {
-        document.getElementById('section-color').style.display = 'block';
+    // VẼ NÚT MÀU
+    if (colorsMap.size > 0 && sectionColor) {
+        sectionColor.style.display = 'block';
         const colorGrid = document.getElementById('color-grid');
         colorGrid.innerHTML = '';
         colorsMap.forEach(color => {
             colorGrid.insertAdjacentHTML('beforeend', `
                 <div class="v-color-btn" id="color-btn-${color.id}" onclick="selectColor(${color.id}, '${color.name}')">
-                    <span class="color-circle" style="background-color: #EEE;"></span>
+                    <span class="color-circle" style="background-color: ${color.hex}; border: 1px solid #CCC;"></span>
                     <span>${color.name}</span>
                 </div>
             `);
         });
     }
 
-    // VẼ KÍCH THƯỚC
-    if (sizesMap.size > 0) {
-        document.getElementById('section-size').style.display = 'block';
+    // VẼ NÚT SIZE
+    if (sizesMap.size > 0 && sectionSize) {
+        sectionSize.style.display = 'block';
         const sizeGrid = document.getElementById('size-grid');
         sizeGrid.innerHTML = '';
         sizesMap.forEach(size => {
@@ -143,7 +163,7 @@ function renderVariants(variants) {
         });
     }
 
-    // Nếu sản phẩm CHỈ có 1 màu hoặc 1 size, tự động click chọn giùm khách
+    // Tự động chọn nếu chỉ có 1 option
     if (colorsMap.size === 1) {
         const firstColor = colorsMap.values().next().value;
         selectColor(firstColor.id, firstColor.name);
@@ -153,16 +173,15 @@ function renderVariants(variants) {
         selectSize(firstSize.id, firstSize.name);
     }
 
-    checkVariantStatus(); // Kiểm tra trạng thái lần đầu
+    checkVariantStatus();
 }
 
-// XỬ LÝ CLICK MÀU
 function selectColor(colorId, colorName) {
     const btn = document.getElementById(`color-btn-${colorId}`);
-    if (btn.classList.contains('disabled')) return;
+    if (!btn || btn.classList.contains('disabled')) return;
 
     if (selectedColorId === colorId) {
-        selectedColorId = null; // Bỏ chọn
+        selectedColorId = null; 
         document.getElementById('selected-color-name').innerText = "Chưa chọn";
         btn.classList.remove('active');
     } else {
@@ -174,10 +193,9 @@ function selectColor(colorId, colorName) {
     checkVariantStatus();
 }
 
-// XỬ LÝ CLICK SIZE
 function selectSize(sizeId, sizeName) {
     const btn = document.getElementById(`size-btn-${sizeId}`);
-    if (btn.classList.contains('disabled')) return;
+    if (!btn || btn.classList.contains('disabled')) return;
 
     if (selectedSizeId === sizeId) {
         selectedSizeId = null;
@@ -192,31 +210,70 @@ function selectSize(sizeId, sizeName) {
     checkVariantStatus();
 }
 
-// TÌM BIẾN THỂ TƯƠNG ỨNG VÀ CẬP NHẬT GIAO DIỆN
 function checkVariantStatus() {
-    // 1. Kiểm tra xem sản phẩm có cần chọn cả Màu và Size không
+    if (!currentProduct || !currentProduct.variants) return;
+
     const hasColor = document.getElementById('section-color').style.display === 'block';
     const hasSize = document.getElementById('section-size').style.display === 'block';
 
     const btnCart = document.getElementById('btn-add-cart');
     const stockStatus = document.getElementById('stock-status');
 
-    // Nếu khách đã chọn đủ các thuộc tính yêu cầu
+    // 👉 LOGIC LÀM MỜ NÚT (Nếu chọn Màu A, các Size của màu A hết hàng thì làm mờ nút Size đó)
+    if (hasSize) {
+        document.querySelectorAll('.v-size-btn').forEach(btn => {
+            const sId = parseInt(btn.id.replace('size-btn-', ''));
+            // Tìm tất cả biến thể có size này (Và thuộc màu đang chọn nếu có)
+            const availableVariants = currentProduct.variants.filter(v => 
+                v.sizeId === sId && 
+                (!hasColor || !selectedColorId || v.colorId === selectedColorId)
+            );
+            
+            // Tính tổng tồn kho của các biến thể này
+            const totalQty = availableVariants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+            
+            if (totalQty === 0) {
+                btn.classList.add('disabled');
+                // Nếu đang chọn nút bị mờ, thì nhả chọn ra
+                if(selectedSizeId === sId) selectSize(sId, '');
+            } else {
+                btn.classList.remove('disabled');
+            }
+        });
+    }
+
+    // 👉 Tương tự làm mờ nút Màu nếu Size đang chọn hết màu đó
+    if (hasColor) {
+         document.querySelectorAll('.v-color-btn').forEach(btn => {
+            const cId = parseInt(btn.id.replace('color-btn-', ''));
+            const availableVariants = currentProduct.variants.filter(v => 
+                v.colorId === cId && 
+                (!hasSize || !selectedSizeId || v.sizeId === selectedSizeId)
+            );
+            
+            const totalQty = availableVariants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+            
+            if (totalQty === 0) {
+                btn.classList.add('disabled');
+                if(selectedColorId === cId) selectColor(cId, '');
+            } else {
+                btn.classList.remove('disabled');
+            }
+        });
+    }
+
+    // KIỂM TRA ĐÃ CHỌN ĐỦ ĐIỀU KIỆN CHƯA
     const isReady = (!hasColor || selectedColorId) && (!hasSize || selectedSizeId);
 
     if (isReady) {
-        // Tìm biến thể cụ thể trong mảng dựa vào ID khách chọn
-        // Nếu không có size thì gán SizeId = 0 (Hoặc null tuỳ backend em lưu)
         currentVariant = currentProduct.variants.find(v => 
-            (hasColor ? v.colorId === selectedColorId : true) && 
-            (hasSize ? v.sizeId === selectedSizeId : true)
+            (!hasColor || v.colorId === selectedColorId) && 
+            (!hasSize || v.sizeId === selectedSizeId)
         );
 
         if (currentVariant) {
-            // Cập nhật Giá (Nếu biến thể có tính thêm tiền)
-            updatePriceDisplay(currentProduct.price + currentVariant.priceModifier);
+            updatePriceDisplay(currentProduct.price + (currentVariant.priceModifier || 0));
 
-            // Cập nhật tồn kho
             if (currentVariant.quantity > 0) {
                 stockStatus.innerHTML = `Mã: <strong>${currentVariant.sku}</strong> | Tồn kho: <strong style="color:var(--color-primary);">${currentVariant.quantity}</strong> sản phẩm`;
                 btnCart.disabled = false;
@@ -232,26 +289,20 @@ function checkVariantStatus() {
         }
     } else {
         currentVariant = null;
-        updatePriceDisplay(currentProduct.price); // Trả về giá gốc
+        updatePriceDisplay(currentProduct.price); 
         stockStatus.innerHTML = "Vui lòng chọn phân loại hàng để xem tồn kho";
         btnCart.disabled = true;
     }
-
-    // TÍNH NĂNG NÂNG CAO: LÀM MỜ CÁC SIZE ĐÃ HẾT HÀNG THEO MÀU ĐANG CHỌN (Tuỳ chọn)
-    // Cần viết thêm logic quét mảng variants để set class 'disabled' cho nút size
 }
 
 // ==========================================
-// 4. THAO TÁC SỐ LƯỢNG & THÊM GIỎ HÀNG
+// 4. THÊM GIỎ HÀNG
 // ==========================================
 function changeQuantity(amount) {
     const input = document.getElementById('qty-input');
     let val = parseInt(input.value) + amount;
     
-    // Không cho chọn số âm
     if (val < 1) val = 1;
-
-    // Không cho chọn lố Tồn kho
     if (currentVariant && val > currentVariant.quantity) {
         showToast(`Chỉ còn ${currentVariant.quantity} sản phẩm trong kho!`, "warning");
         val = currentVariant.quantity;
@@ -259,87 +310,94 @@ function changeQuantity(amount) {
     input.value = val;
 }
 
-// Hàm Add To Cart (Sẽ kết nối với file cart.js sau này)
-function addToCart() {
+// ==========================================
+// 4. THÊM GIỎ HÀNG (CẬP NHẬT GỌI API CHUẨN)
+// ==========================================
+async function addToCart() {
     if (!currentVariant) return;
     
+    // Nếu khách chưa đăng nhập, bắt buộc chuyển sang trang Login
+    if (!authManager.isLoggedIn()) {
+        showToast("Vui lòng đăng nhập để thêm vào giỏ hàng!", "warning");
+        setTimeout(() => window.location.href = 'login.html', 1500);
+        return;
+    }
+
     const qty = parseInt(document.getElementById('qty-input').value);
     
-    const cartItem = {
-        productId: currentProduct.id,
-        variantId: currentVariant.id,
-        sku: currentVariant.sku,
-        name: currentProduct.name,
-        image: document.getElementById('main-image').src,
-        colorName: document.getElementById('selected-color-name').innerText,
-        sizeName: document.getElementById('selected-size-name').innerText,
-        price: currentProduct.price + currentVariant.priceModifier,
-        quantity: qty
-    };
+    try {
+        const btnCart = document.getElementById('btn-add-cart');
+        btnCart.disabled = true;
+        btnCart.innerHTML = "ĐANG THÊM...";
 
-    // Tạm thời lưu vào LocalStorage để test
-    let cart = JSON.parse(localStorage.getItem('webnhom5_cart') || '[]');
-    
-    // Kiểm tra xem đã có trong giỏ chưa
-    const existingIndex = cart.findIndex(item => item.variantId === currentVariant.id);
-    if (existingIndex > -1) {
-        cart[existingIndex].quantity += qty;
-    } else {
-        cart.push(cartItem);
+        // GỌI API THÊM VÀO GIỎ HÀNG (Dựa theo backend em đã viết trong cart.js)
+        await apiFetch('/cart/add', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                productId: currentProduct.id, 
+                productVariantId: currentVariant.id, 
+                quantity: qty 
+            })
+        });
+
+        showToast(`Đã thêm ${qty} sản phẩm vào giỏ!`, "success");
+        document.getElementById('qty-input').value = 1;
+        
+        updateGlobalCartBadge();
+
+    } catch (error) {
+        // Lỗi (như vượt tồn kho) sẽ do apiFetch bắt và hiện Toast đỏ
+    } finally {
+        const btnCart = document.getElementById('btn-add-cart');
+        btnCart.disabled = false;
+        btnCart.innerHTML = '<i class="ph ph-shopping-cart"></i> THÊM VÀO GIỎ HÀNG';
     }
-    
-    localStorage.setItem('webnhom5_cart', JSON.stringify(cart));
-    
-    showToast(`Đã thêm ${qty} sản phẩm vào giỏ!`, "success");
-    
-    // Reset số lượng về 1 sau khi thêm
-    document.getElementById('qty-input').value = 1;
 }
+
 // ==========================================
 // 5. SẢN PHẨM LIÊN QUAN
 // ==========================================
 async function loadRelatedProducts(categoryId, currentProductId) {
     try {
-        // Tạm thời gọi API lấy toàn bộ sp để lọc (Nếu backend có API riêng thì càng tốt)
         const response = await apiFetch('/products');
         const allProds = Array.isArray(response) ? response : (response.items || []);
         
-        // Lấy các sản phẩm CÙNG DANH MỤC, KHÁC ID HIỆN TẠI, và ĐANG BẬT
+        // Cố gắng lấy SP cùng danh mục
         let related = allProds.filter(p => p.categoryId === categoryId && p.id != currentProductId && p.isActive);
-
-        // Lấy tối đa 4 sản phẩm cho đẹp 1 hàng ngang
+        
+        // NẾU THIẾU (DƯỚI 4 CÁI), LẤY BÙ CÁC SẢN PHẨM KHÁC ĐỂ TRANG LUÔN ĐẸP
+        if (related.length < 4) {
+            let others = allProds.filter(p => p.categoryId !== categoryId && p.id != currentProductId && p.isActive);
+            related = related.concat(others); 
+        }
+        
         related = related.slice(0, 4);
 
         const grid = document.getElementById('related-product-grid');
+        if(!grid) return;
         grid.innerHTML = '';
-
-        if (related.length === 0) {
-            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Đang cập nhật thêm bộ sưu tập...</p>';
-            return;
-        }
 
         related.forEach(p => {
             let imgUrl = p.thumbnail ? (p.thumbnail.startsWith('http') ? p.thumbnail : BACKEND_URL + p.thumbnail) : 'image/placeholder.jpg';
-            
             const card = `
-                <div class="product-card" onclick="window.location.href='product-detail.html?id=${p.id}'">
-                    <div class="product-image">
-                        <img src="${imgUrl}" alt="${p.name}" onerror="this.src='image/placeholder.jpg'">
-                    </div>
+                <div class="product-card" onclick="window.location.href='product-detail.html?id=${p.id}'" style="cursor:pointer;">
+                    <div class="product-image"><img src="${imgUrl}" onerror="this.src='image/placeholder.jpg'"></div>
                     <div class="product-info">
-                        <div class="product-brand">${p.categoryName || 'WebNhom5 Exclusive'}</div>
-                        <h4 class="product-name" title="${p.name}">${p.name}</h4>
+                        <div class="product-brand">${p.categoryName || 'WebNhom5'}</div>
+                        <h4 class="product-name">${p.name}</h4>
+                        <div style="color: #FFC107; font-size: 0.95rem; margin: 4px 0; display:flex; justify-content:center; gap:2px;">
+                            <i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i><i class="ph-fill ph-star"></i>
+                            <span style="color:#888; font-size:0.8rem; margin-left:4px;">(5.0)</span>
+                        </div>
                         <div class="product-price">${new Intl.NumberFormat('vi-VN').format(p.price)} ₫</div>
                     </div>
                 </div>
             `;
             grid.insertAdjacentHTML('beforeend', card);
         });
-
-    } catch (error) {
-        console.error("Lỗi tải SP liên quan:", error);
-    }
+    } catch (error) { }
 }
+
 // ==========================================
 // 6. XỬ LÝ ĐÁNH GIÁ (REVIEWS)
 // ==========================================
@@ -352,21 +410,20 @@ async function loadReviews(productId) {
         const avgStarsDisplay = document.getElementById('avg-stars-display');
         
         if (!reviews || reviews.length === 0) {
-            listContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 30px 0;">Sản phẩm này chưa có đánh giá nào. Hãy là người đầu tiên sở hữu và đánh giá nhé!</p>';
-            summaryStars.innerHTML = '<span style="color:var(--text-muted); font-size: 0.9rem;">Chưa có đánh giá</span>';
+            if(listContainer) listContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 30px 0;">Sản phẩm này chưa có đánh giá nào. Hãy là người đầu tiên sở hữu và đánh giá nhé!</p>';
+            if(summaryStars) summaryStars.innerHTML = '<span style="color:var(--text-muted); font-size: 0.9rem;">Chưa có đánh giá</span>';
             return;
         }
 
-        // Tính điểm trung bình
         let totalScore = 0;
         reviews.forEach(r => totalScore += r.rating);
         let avgScore = (totalScore / reviews.length).toFixed(1);
 
-        // Cập nhật text tổng quan
-        document.getElementById('avg-rating-text').innerText = avgScore;
-        document.getElementById('total-reviews-text').innerText = `${reviews.length} đánh giá`;
+        const avgText = document.getElementById('avg-rating-text');
+        const totalText = document.getElementById('total-reviews-text');
+        if(avgText) avgText.innerText = avgScore;
+        if(totalText) totalText.innerText = `${reviews.length} đánh giá`;
 
-        // Hàm vẽ ngôi sao vàng/xám
         const drawStars = (score) => {
             let starsHtml = '';
             for(let i=1; i<=5; i++) {
@@ -376,32 +433,76 @@ async function loadReviews(productId) {
             return starsHtml;
         };
 
-        // Cập nhật sao ở 2 chỗ (Trên đầu và dưới summary)
-        summaryStars.innerHTML = drawStars(avgScore) + `<span style="color:var(--text-main); font-size:1rem; margin-left:5px;">(${avgScore})</span>`;
-        avgStarsDisplay.innerHTML = drawStars(avgScore);
+        if(summaryStars) summaryStars.innerHTML = drawStars(avgScore) + `<span style="color:var(--text-main); font-size:1rem; margin-left:5px;">(${avgScore})</span>`;
+        if(avgStarsDisplay) avgStarsDisplay.innerHTML = drawStars(avgScore);
 
-        // Vẽ danh sách Comment
-        listContainer.innerHTML = '';
-        reviews.forEach(r => {
-            let dateStr = new Date(r.createdAt).toLocaleDateString('vi-VN');
-            // Lấy chữ cái đầu của tên làm Avatar
-            let initial = r.userName ? r.userName.charAt(0).toUpperCase() : 'U';
-            
-            let html = `
-                <div class="review-item">
-                    <div class="review-avatar">${initial}</div>
-                    <div class="review-content">
-                        <div class="review-user">${r.userName || 'Khách hàng ẩn danh'}</div>
-                        <div class="review-stars">${drawStars(r.rating)}</div>
-                        <div class="review-date">${dateStr} | Phân loại hàng: Mặc định</div>
-                        <div class="review-text">${r.comment || 'Khách hàng không để lại bình luận.'}</div>
+        if(listContainer) {
+            listContainer.innerHTML = '';
+            reviews.forEach(r => {
+                let dateStr = new Date(r.createdAt).toLocaleDateString('vi-VN');
+                let initial = r.userName ? r.userName.charAt(0).toUpperCase() : 'U';
+                
+                let html = `
+                    <div class="review-item">
+                        <div class="review-avatar">${initial}</div>
+                        <div class="review-content">
+                            <div class="review-user">${r.userName || 'Khách hàng ẩn danh'}</div>
+                            <div class="review-stars">${drawStars(r.rating)}</div>
+                            <div class="review-date">${dateStr}</div>
+                            <div class="review-text">${r.comment || 'Khách hàng không để lại bình luận.'}</div>
+                        </div>
                     </div>
-                </div>
-            `;
-            listContainer.insertAdjacentHTML('beforeend', html);
-        });
+                `;
+                listContainer.insertAdjacentHTML('beforeend', html);
+            });
+        }
+    } catch (error) { }
+}
+let selectedRating = 5;
 
+function initStarRating() {
+    const stars = document.querySelectorAll('#star-rating-input i');
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            selectedRating = parseInt(this.getAttribute('data-val'));
+            // Tô màu vàng cho các sao từ 1 đến sao được chọn
+            stars.forEach(s => {
+                if (parseInt(s.getAttribute('data-val')) <= selectedRating) {
+                    s.style.color = '#FFA726';
+                    s.style.transform = 'scale(1.1)';
+                } else {
+                    s.style.color = '#E0E0E0';
+                    s.style.transform = 'scale(1)';
+                }
+            });
+        });
+    });
+    // Kích hoạt 5 sao mặc định
+    document.querySelector('#star-rating-input i[data-val="5"]').click();
+}
+
+async function submitReview() {
+    const comment = document.getElementById('review-comment').value.trim();
+    if (!comment) {
+        showToast("Vui lòng chia sẻ vài lời về sản phẩm nhé!", "warning");
+        return;
+    }
+    
+    // Gói dữ liệu gửi lên (Dựa theo CreateReviewDto của em)
+    const dto = {
+        ProductId: currentProduct.id,
+        Rating: selectedRating,
+        Comment: comment,
+        OrderId: 0 // Trong tương lai, Backend cần validate khách đã mua hàng hay chưa thông qua OrderId
+    };
+
+    try {
+        // GỌI API (Đảm bảo backend có [HttpPost("reviews")] hoặc tương tự)
+        await apiFetch(`/products/reviews`, { method: 'POST', body: JSON.stringify(dto) });
+        showToast("Cảm ơn bạn đã gửi đánh giá!", "success");
+        document.getElementById('review-comment').value = '';
+        loadReviews(currentProduct.id); // Tải lại danh sách comment
     } catch (error) {
-        console.error("Lỗi tải đánh giá:", error);
+        // Lỗi do api.js tự show Toast
     }
 }

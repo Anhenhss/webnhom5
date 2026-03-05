@@ -197,6 +197,9 @@
     line-height: 1.8;
     color: var(--text-muted);
     text-align: justify;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 /* Giao diện Lưới và Card của Sản phẩm liên quan (Copy style từ shop) */

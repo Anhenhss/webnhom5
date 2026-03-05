@@ -87,7 +87,7 @@ namespace webnhom5.Services
             return await _context.Products
                 .Include(p => p.Category)
                 .Include(p => p.ProductImages)
-                .Include(p => p.ProductVariants) // <--- THÊM DÒNG NÀY (BẮT BUỘC)
+                .Include(p => p.ProductVariants)
                 .Select(p => new ProductResponseDto
                 {
                     Id = p.Id,
@@ -98,7 +98,13 @@ namespace webnhom5.Services
                     CategoryId = p.CategoryId,
                     CategoryName = p.Category.Name,
                     IsActive = p.IsActive,
-                    // TotalStock ở DTO sẽ tự động tính nhờ có Include ở trên
+                    TotalStock = p.ProductVariants.Sum(v => v.Quantity ?? 0),
+
+                    Variants = p.ProductVariants.Select(v => new VariantResponseDto
+                    {
+                        ColorId = v.ColorId,
+                        SizeId = v.SizeId
+                    }).ToList()
                 })
                 .OrderByDescending(p => p.Id) // Xếp sp mới lên đầu
                 .ToListAsync();
@@ -171,30 +177,52 @@ namespace webnhom5.Services
                 }
                 await _context.SaveChangesAsync();
             }
-
+            if (dto.Variants != null && dto.Variants.Any())
+            {
+                foreach (var v in dto.Variants)
+                {
+                    var variant = new ProductVariant
+                    {
+                        ProductId = product.Id, // Đã có ID sau khi thêm Product ở trên
+                        ColorId = v.ColorId,
+                        SizeId = v.SizeId,
+                        Sku = v.Sku,
+                        Quantity = v.Quantity,
+                        PriceModifier = v.PriceModifier
+                    };
+                    _context.ProductVariants.Add(variant);
+                }
+                await _context.SaveChangesAsync();
+            }
             return await GetProductByIdAsync(product.Id) ?? new ProductResponseDto();
         }
 
         public async Task<ProductResponseDto> UpdateProductAsync(int id, UpdateProductDto dto)
         {
-            var product = await _context.Products.FindAsync(id);
+            // 1. Tìm sản phẩm và Include luôn danh sách biến thể cũ
+            var product = await _context.Products
+                .Include(p => p.ProductVariants)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (product == null) throw new Exception("Không tìm thấy sản phẩm");
 
+            // 2. Cập nhật thông tin cơ bản
             product.Name = dto.Name;
             product.Price = dto.Price;
             product.Description = dto.Description;
             product.CategoryId = dto.CategoryId;
-            product.IsActive = dto.IsActive;
+            // product.IsActive = dto.IsActive;
 
+            // 3. Cập nhật ảnh đại diện
             if (dto.ThumbnailFile != null)
             {
                 product.Thumbnail = await SaveFileAsync(dto.ThumbnailFile);
             }
 
+            // 4. Cập nhật ảnh phụ
             if (dto.NewGalleryFiles != null && dto.NewGalleryFiles.Any())
             {
                 int currentMaxSort = await _context.ProductImages.Where(p => p.ProductId == id).MaxAsync(p => (int?)p.SortOrder) ?? 0;
-
                 foreach (var file in dto.NewGalleryFiles)
                 {
                     currentMaxSort++;
@@ -203,7 +231,54 @@ namespace webnhom5.Services
                 }
             }
 
+            // ==============================================================
+            // 5. XỬ LÝ CẬP NHẬT DANH SÁCH BIẾN THỂ (VARIANTS)
+            // ==============================================================
+            if (dto.Variants != null)
+            {
+                // Lấy danh sách SKU gửi lên từ Frontend
+                var submittedSkus = dto.Variants.Select(v => v.Sku).ToList();
+
+                // A. Xóa các biến thể cũ không còn tồn tại trong danh sách gửi lên
+                var variantsToRemove = product.ProductVariants
+                    .Where(v => !submittedSkus.Contains(v.Sku))
+                    .ToList();
+                _context.ProductVariants.RemoveRange(variantsToRemove);
+
+                // B. Lặp qua danh sách gửi lên để Cập nhật hoặc Thêm mới
+                foreach (var submittedVariant in dto.Variants)
+                {
+                    var existingVariant = product.ProductVariants
+                        .FirstOrDefault(v => v.Sku == submittedVariant.Sku);
+
+                    if (existingVariant != null)
+                    {
+                        // Nếu đã có -> CẬP NHẬT số lượng và giá chênh lệch
+                        existingVariant.Quantity = submittedVariant.Quantity;
+                        existingVariant.PriceModifier = submittedVariant.PriceModifier;
+                        // (Không cho phép đổi Màu/Size của một SKU đã có, nếu muốn đổi thì coi như tạo dòng mới)
+                    }
+                    else
+                    {
+                        // Nếu chưa có -> THÊM MỚI biến thể
+                        var newVariant = new ProductVariant
+                        {
+                            ProductId = product.Id,
+                            ColorId = submittedVariant.ColorId,
+                            SizeId = submittedVariant.SizeId,
+                            Sku = submittedVariant.Sku,
+                            Quantity = submittedVariant.Quantity,
+                            PriceModifier = submittedVariant.PriceModifier
+                        };
+                        _context.ProductVariants.Add(newVariant);
+                    }
+                }
+            }
+
+            // 6. Lưu toàn bộ thay đổi xuống Database
             await _productRepo.UpdateAsync(product);
+            // Ghi chú: _productRepo.UpdateAsync thường đã gọi _context.SaveChangesAsync() bên trong.
+
             return await GetProductByIdAsync(id) ?? new ProductResponseDto();
         }
 
@@ -311,7 +386,7 @@ namespace webnhom5.Services
 
             product.IsActive = !product.IsActive; // Đổi trạng thái Bật <-> Ẩn
             await _context.SaveChangesAsync();
-            
+
             return product.IsActive ?? false;
         }
         // --- 4. MASTER DATA ---
@@ -321,15 +396,15 @@ namespace webnhom5.Services
             bool exists = await _context.MasterColors.AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower() || c.HexCode.ToLower() == dto.HexCode!.ToLower());
             if (exists) throw new Exception("Tên màu hoặc mã Hex màu này đã tồn tại!");
 
-            var color = new MasterColor 
-            { 
-                Name = dto.Name.Trim(), 
+            var color = new MasterColor
+            {
+                Name = dto.Name.Trim(),
                 HexCode = dto.HexCode!.Trim() // Lưu mã Hex chuẩn (VD: #FF0000)
             };
-            
+
             _context.MasterColors.Add(color);
             await _context.SaveChangesAsync();
-            return color.Id; 
+            return color.Id;
         }
 
         public async Task<int> AddSizeAsync(MasterDataDto dto)
@@ -338,11 +413,11 @@ namespace webnhom5.Services
             bool exists = await _context.MasterSizes.AnyAsync(s => s.Name.ToLower() == dto.Name.ToLower());
             if (exists) throw new Exception("Kích thước này đã tồn tại!");
 
-            var size = new MasterSize 
-            { 
+            var size = new MasterSize
+            {
                 Name = dto.Name.Trim() // Lấy chính Name làm giá trị (S, M, 39, 40...)
             };
-            
+
             _context.MasterSizes.Add(size);
             await _context.SaveChangesAsync();
             return size.Id;
@@ -390,6 +465,47 @@ namespace webnhom5.Services
                     CreatedAt = r.CreatedAt,
                     UserName = r.User.FullName // Lấy tên khách hàng
                 }).ToListAsync();
+        }
+        public async Task<ReviewResponseDto> CreateReviewAsync(int userId, CreateReviewDto dto)
+        {
+            // 1. Kiểm tra sản phẩm có tồn tại không
+            bool productExists = await _context.Products.AnyAsync(p => p.Id == dto.ProductId);
+            if (!productExists) throw new Exception("Sản phẩm không tồn tại.");
+
+            // 💡 TÍNH NĂNG MỞ RỘNG TƯƠNG LAI: Kiểm tra xem user đã mua hàng chưa
+            // Hiện tại comment lại để dễ test UI. Khi nào làm xong module Đặt Hàng (Order)
+            /*
+            if (dto.OrderId <= 0) throw new Exception("Thiếu thông tin đơn hàng.");
+            bool hasBought = await _context.OrderDetails
+                .AnyAsync(od => od.OrderId == dto.OrderId && od.Order.UserId == userId && od.ProductVariant.ProductId == dto.ProductId);
+            if (!hasBought) throw new Exception("Bạn phải mua sản phẩm này mới được đánh giá!");
+            */
+
+            // 2. Tạo đối tượng Review mới
+            var review = new ProductReview
+            {
+                ProductId = dto.ProductId,
+                UserId = userId,
+                // OrderId = dto.OrderId,
+                Rating = dto.Rating,
+                Comment = dto.Comment,
+                CreatedAt = DateTime.Now
+            };
+
+            _context.ProductReviews.Add(review);
+            await _context.SaveChangesAsync();
+
+            // 3. Truy vấn User để lấy tên và trả về cho Frontend hiển thị ngay lập tức
+            var user = await _context.Users.FindAsync(userId);
+            
+            return new ReviewResponseDto
+            {
+                Id = review.Id,
+                Rating = review.Rating ?? 5,
+                Comment = review.Comment,
+                CreatedAt = review.CreatedAt,
+                UserName = user?.FullName ?? "Thành viên"
+            };
         }
     }
 }

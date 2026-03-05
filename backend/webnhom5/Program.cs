@@ -22,6 +22,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMarketingService, MarketingService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // CẤU HÌNH AUTHENTICATION (JWT)
 builder.Services.AddAuthentication(options =>

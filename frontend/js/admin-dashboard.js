@@ -9,12 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const roleTitle = userInfo.role === 'Admin' ? "Quản trị viên" : "Nhân viên";
     document.getElementById('display-admin-name').innerText = `Xin chào, ${roleTitle} (${userInfo.fullName})`;
-
-    const avatarElem = document.getElementById('admin-avatar');
-    if (avatarElem) {
-        // Tự động tạo ảnh đại diện theo tên (UI Avatars)
-        avatarElem.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=003049&color=fff`;
-    }
     // Khởi tạo tải dữ liệu lần đầu
     loadDashboardData();
 });
@@ -63,6 +57,8 @@ function updateOverviewCards(overview) {
     
     // Visitors hiện đang set là 0 từ Backend, em có thể update logic sau
     document.getElementById('stat-visitors').innerText = overview.totalVisitors;
+    const statProducts = document.getElementById('stat-products');
+    if(statProducts) statProducts.innerText = overview.totalProducts || 0;
 }
 
 // 2. CẬP NHẬT CẢNH BÁO (Dùng DashboardOverviewDto)
@@ -174,12 +170,7 @@ function renderChart(chartData) {
     });
 }
 
-// Xử lý đăng xuất
-function logout() {
-    authManager.clear();
-    showToast("Đã đăng xuất!", "success");
-    setTimeout(() => { window.location.href = 'login.html'; }, 1000);
-}
+
 /* ==========================================================================
    TÍNH NĂNG TÌM KIẾM ĐƠN HÀNG (TOPBAR)
    ========================================================================== */

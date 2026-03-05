@@ -46,11 +46,15 @@ function flattenCategories(tree, prefix = "") {
 
 async function loadMasterData() {
     try {
-        let colors = await apiFetch('/master-data/colors');
-        let sizes = await apiFetch('/master-data/sizes');
-        masterColors = [{ id: 0, name: "Không áp dụng", hexCode: "NA" }, ...colors];
+        // Sửa đường dẫn thêm chữ /products vào trước
+        let colors = await apiFetch('/products/master-data/colors');
+        let sizes = await apiFetch('/products/master-data/sizes');
+        
+        masterColors = [{ id: 0, name: "Không áp dụng", hexCode: "#FFFFFF" }, ...colors];
         masterSizes = [{ id: 0, name: "Không áp dụng", code: "NA" }, ...sizes];
-    } catch (error) { console.error("Lỗi Master Data:", error); }
+    } catch (error) { 
+        console.error("Lỗi Master Data:", error); 
+    }
 }
 
 // ==========================================
@@ -94,14 +98,28 @@ function renderProductTable(products) {
 
         const tr = `
             <tr>
-                <td><div style="display:flex; align-items:center; gap:10px;"><img src="${imgUrl}" class="product-thumb-small"><strong>${p.name}</strong></div></td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${imgUrl}" class="product-thumb-small">
+                        <strong>${p.name}</strong>
+                    </div>
+                </td>
                 <td>${p.categoryName}</td>
                 <td>${new Intl.NumberFormat('vi-VN').format(p.price)}₫</td>
-                <td><strong>${p.totalStock || 0}</strong></td>
-                <td><span class="badge ${badgeClass}" style="cursor:pointer" onclick="toggleProductStatus(${p.id})">${badgeText}</span></td>
+                <td><strong>${p.totalStock}</strong></td>
                 <td>
-                    <button class="btn btn-outline btn-sm" onclick="editProduct(${p.id})">Sửa</button>
-                    <button class="btn-icon-sm text-danger" onclick="deleteProduct(${p.id})" style="background:none; border:none; cursor:pointer; font-size:1.1rem; padding:4px;"><i class="ph-bold ph-trash"></i></button>
+                    <span class="badge ${badgeClass}" style="cursor:pointer" onclick="toggleProductStatus(${p.id})" title="Nhấn để Đổi trạng thái">
+                        ${badgeText}
+                    </span>
+                </td>
+                <td>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-outline btn-sm" onclick="editProduct(${p.id})">Sửa</button>
+                        
+                        <button class="btn-icon-sm text-danger" onclick="deleteProduct(${p.id})" style="background:none; border:none; cursor:pointer; font-size:1.1rem; padding:4px;">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>`;
         tbody.insertAdjacentHTML('beforeend', tr);
@@ -111,13 +129,19 @@ function renderProductTable(products) {
 // ==========================================
 // 3. THAO TÁC XÓA & BẬT/ẨN
 // ==========================================
-async function deleteProduct(id) {
-    if(!confirm("Cảnh báo: Bạn chắc chắn muốn xóa sản phẩm này?")) return;
-    try {
-        await apiFetch(`/products/${id}`, { method: 'DELETE' });
-        showToast("Đã xóa sản phẩm", "success");
-        loadProducts();
-    } catch (e) { showToast("Không thể xóa sản phẩm", "error"); }
+function deleteProduct(id, name) {
+    showConfirmModal(
+        "Xóa Sản Phẩm?", 
+        `Bạn có chắc chắn muốn xóa sản phẩm <strong>"${name}"</strong> không?<br>Hành động này không thể hoàn tác.`, 
+        "Đồng ý Xóa", 
+        async () => {
+            try {
+                await apiFetch(`/products/${id}`, { method: 'DELETE' });
+                showToast("Đã xóa sản phẩm thành công", "success");
+                loadProducts();
+            } catch (e) {} // Lỗi có api.js lo
+        }
+    );
 }
 
 async function toggleProductStatus(id) {
@@ -150,11 +174,38 @@ function removeThumbnail() {
     thumbnailFile = null;
 }
 function handleGalleryUpload(event) {
-    galleryFiles = galleryFiles.concat(Array.from(event.target.files));
-    renderGallery();
-    document.getElementById('p-gallery').value = "";
+    const newFiles = Array.from(event.target.files);
+    const container = document.getElementById('gallery-preview');
+
+    newFiles.forEach((file) => {
+        // Thêm file vào mảng tổng
+        galleryFiles.push(file);
+        const fileIndex = galleryFiles.length - 1; 
+
+        // Đọc file để lấy hình ảnh preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            container.insertAdjacentHTML('beforeend', `
+                <div class="img-preview-box" data-file-index="${fileIndex}">
+                    <img src="${e.target.result}">
+                    <div class="btn-remove-img" onclick="removeGalleryFile(${fileIndex}, this)"><i class="ph ph-x"></i></div>
+                </div>
+            `);
+        };
+        reader.readAsDataURL(file);
+    });
+    
+    document.getElementById('p-gallery').value = ""; // Reset lại input file
 }
-function renderGallery() { /* Đã ẩn bớt để code gọn, giữ nguyên logic cũ */ }
+
+// Xóa 1 ảnh đính kèm vừa chọn
+function removeGalleryFile(index, btnElement) {
+    // Đánh dấu null trong mảng để lát gửi API nó bỏ qua, không dùng splice để tránh lệch index
+    galleryFiles[index] = null; 
+    // Xóa cái khung ảnh ngoài giao diện
+    btnElement.closest('.img-preview-box').remove(); 
+}
+
 
 function addVariantRow(data = null) {
     const tbody = document.getElementById('variant-tbody');
@@ -191,21 +242,46 @@ function addVariantRow(data = null) {
     if(!data) updateRowSKU(rowId); // Nếu thêm mới thì sinh mã
 }
 
+// Hàm tạo mã SKU riêng cho màu sắc siêu thông minh
+function getColorSKUCode(str) {
+    if (!str || str === "Không áp dụng" || str.includes("--")) return "";
+    
+    // Bỏ dấu tiếng Việt
+    str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase();
+    const words = str.split(' ').filter(w => w.length > 0);
+    
+    if (words.length === 1) {
+        return words[0].substring(0, 3); // 1 chữ: Lấy tối đa 3 ký tự (ĐEN -> DEN, ĐỎ -> DO)
+    } else {
+        return words.map(w => w[0]).join(''); // Nhiều chữ: Lấy viết tắt (XANH LÁ -> XL)
+    }
+}
+
 function updateRowSKU(rowId) {
     const row = document.getElementById(`v-row-${rowId}`);
     if(!row) return;
-    const nameStr = document.getElementById('p-name').value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '').substring(0, 3).toUpperCase() || 'SPX';
+    
+    // Tên SP: Lấy 3 chữ cái đầu (VD: Áo Thun -> AT)
+    let rawName = document.getElementById('p-name').value;
+    rawName = rawName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase();
+    const nameStr = rawName.split(' ').filter(w => w.length > 0).map(w => w[0]).join('').substring(0, 4) || 'SP'; 
+    
     const colorName = row.querySelector('.v-color').options[row.querySelector('.v-color').selectedIndex]?.text || '';
+    const colorStr = getColorSKUCode(colorName);
+    
     const sizeName = row.querySelector('.v-size').options[row.querySelector('.v-size').selectedIndex]?.text || '';
+    const sizeStr = (sizeName && sizeName !== "Không áp dụng" && !sizeName.includes("--")) ? sizeName.replace(/\s+/g, '').toUpperCase() : "";
     
     let skuParts = [nameStr];
-    if (colorName && colorName !== "Không áp dụng" && colorName !== "-- Chọn Màu --") skuParts.push(colorName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '').substring(0, 3).toUpperCase());
-    if (sizeName && sizeName !== "Không áp dụng" && sizeName !== "-- Chọn Size --") skuParts.push(sizeName.replace(/\s+/g, '').toUpperCase());
+    if (colorStr) skuParts.push(colorStr);
+    if (sizeStr) skuParts.push(sizeStr);
     
     row.querySelector('.v-sku').value = skuParts.join('-');
 }
-function updateAllSKUs() { document.querySelectorAll('#variant-tbody tr').forEach(row => updateRowSKU(row.id.split('v-row-')[1])); }
 
+function updateAllSKUs() { 
+    document.querySelectorAll('#variant-tbody tr').forEach(row => updateRowSKU(row.id.split('v-row-')[1])); 
+}
 // ==========================================
 // 5. THÊM / SỬA SẢN PHẨM (MỞ MODAL & LƯU)
 // ==========================================
@@ -276,50 +352,102 @@ function closeProductModal() { document.getElementById('product-modal').style.di
 
 async function saveProduct(event) {
     event.preventDefault();
-    const formData = new FormData();
-    formData.append("Name", document.getElementById('p-name').value);
-    formData.append("CategoryId", document.getElementById('p-category').value);
-    formData.append("Price", document.getElementById('p-price').value);
-    formData.append("Description", document.getElementById('p-desc').value);
     
-    if (thumbnailFile) formData.append("ThumbnailFile", thumbnailFile);
-    // (Bỏ qua Gallery trong bài này cho gọn nhẹ)
+    const categoryId = document.getElementById('p-category').value;
+    if (!categoryId) { showToast("Vui lòng chọn Danh mục!", "warning"); return; }
 
-    const variants = Array.from(document.querySelectorAll('#variant-tbody tr')).map(row => ({
-        ColorId: parseInt(row.querySelector('.v-color').value) || 0,
-        SizeId: parseInt(row.querySelector('.v-size').value) || 0,
-        Sku: row.querySelector('.v-sku').value,
-        Quantity: parseInt(row.querySelector('.v-qty').value),
-        PriceModifier: parseFloat(row.querySelector('.v-price').value || 0)
-    }));
-    formData.append("VariantsJson", JSON.stringify(variants));
+    const formData = new FormData();
+    formData.append("Name", document.getElementById('p-name').value.trim());
+    formData.append("CategoryId", parseInt(categoryId)); 
+    formData.append("Price", parseFloat(document.getElementById('p-price').value) || 0); 
+    formData.append("Description", document.getElementById('p-desc').value.trim());
+    
+    if (thumbnailFile) {
+        formData.append("ThumbnailFile", thumbnailFile);
+    } else if (!editingProductId) {
+        showToast("Vui lòng chọn Ảnh đại diện!", "warning"); return; 
+    }
+
+    // Đính kèm danh sách ảnh phụ
+    galleryFiles.forEach(file => {
+        if (file !== null) formData.append("GalleryFiles", file);
+    });
+
+    // ÉP KIỂU BIẾN THỂ THÀNH MẢNG CHO C#
+    const variants = document.querySelectorAll('#variant-tbody tr');
+    let vCount = 0;
+    variants.forEach((row) => {
+        formData.append(`Variants[${vCount}].ColorId`, parseInt(row.querySelector('.v-color').value) || 0);
+        formData.append(`Variants[${vCount}].SizeId`, parseInt(row.querySelector('.v-size').value) || 0);
+        formData.append(`Variants[${vCount}].Sku`, row.querySelector('.v-sku').value);
+        formData.append(`Variants[${vCount}].Quantity`, parseInt(row.querySelector('.v-qty').value) || 0);
+        formData.append(`Variants[${vCount}].PriceModifier`, parseFloat(row.querySelector('.v-price').value) || 0);
+        vCount++;
+    });
 
     try {
-        showToast("Đang lưu dữ liệu...", "info");
+        const btnSave = document.querySelector('button[form="product-form"]');
+        btnSave.disabled = true;
+        btnSave.innerText = "Đang lưu...";
         
         if (editingProductId) {
-            // Cập nhật sản phẩm cũ (PUT)
             await apiFetch(`/products/${editingProductId}`, { method: 'PUT', body: formData });
             showToast("Đã cập nhật sản phẩm!", "success");
         } else {
-            // Tạo mới (POST)
             await apiFetch('/products', { method: 'POST', body: formData });
             showToast("Đã tạo sản phẩm mới!", "success");
         }
         
         closeProductModal();
         loadProducts(); 
-    } catch (error) { console.error(error); showToast("Có lỗi xảy ra", "error"); }
+    } catch (error) { } 
+    finally {
+        const btnSave = document.querySelector('button[form="product-form"]');
+        btnSave.disabled = false;
+        btnSave.innerText = "Lưu Sản phẩm";
+    }
 }
 
 // Logic Modal Master Data (Giữ nguyên)
 function openMasterModal(t) { document.getElementById(`${t.toLowerCase()}-form`).reset(); document.getElementById(`${t.toLowerCase()}-modal`).style.display = 'flex'; }
 function closeMasterModal(t) { document.getElementById(`${t.toLowerCase()}-modal`).style.display = 'none'; }
-async function submitMasterData(e, t) {
+async function submitMasterData(e, type) {
     e.preventDefault();
-    let d = t==='Color' ? {Name:document.getElementById('new-color-name').value, HexCode:document.getElementById('new-color-hex').value} : {Name:document.getElementById('new-size-name').value};
+    let data = type === 'Color' 
+        ? { Name: document.getElementById('new-color-name').value, HexCode: document.getElementById('new-color-hex').value } 
+        : { Name: document.getElementById('new-size-name').value };
+        
     try {
-        await apiFetch(t==='Color'?'/products/colors':'/products/sizes', { method: 'POST', body: JSON.stringify(d) });
-        showToast(`Thêm thành công!`, "success"); closeMasterModal(t); loadMasterData();
-    } catch(err) { showToast("Lỗi", "error"); }
+        const endpoint = type === 'Color' ? '/products/colors' : '/products/sizes';
+        await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(data) });
+        
+        showToast(`Đã thêm ${type === 'Color' ? 'Màu' : 'Size'} thành công!`, "success"); 
+        closeMasterModal(type); 
+        
+        // 1. Tải lại dữ liệu từ C#
+        await loadMasterData(); 
+        
+        // 2. TỰ ĐỘNG CẬP NHẬT CÁC DROPDOWN ĐANG MỞ
+        updateAllVariantDropdowns(); 
+
+    } catch(err) { }
+}
+
+// BỔ SUNG THÊM HÀM NÀY NGAY BÊN DƯỚI:
+function updateAllVariantDropdowns() {
+    // Cập nhật ô chọn Màu
+    document.querySelectorAll('.v-color').forEach(select => {
+        const currentVal = select.value; // Nhớ giá trị đang chọn
+        select.innerHTML = `<option value="">-- Chọn Màu --</option>` + 
+            masterColors.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        select.value = currentVal; // Trả lại giá trị đang chọn
+    });
+
+    // Cập nhật ô chọn Size
+    document.querySelectorAll('.v-size').forEach(select => {
+        const currentVal = select.value;
+        select.innerHTML = `<option value="">-- Chọn Size --</option>` + 
+            masterSizes.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        select.value = currentVal;
+    });
 }

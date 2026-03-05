@@ -10,11 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const roleTitle = userInfo.role === 'Admin' ? "Quản trị viên" : "Nhân viên";
     document.getElementById('display-admin-name').innerText = `${roleTitle} (${userInfo.fullName})`;
 
-    const avatarElem = document.getElementById('admin-avatar');
-    if (avatarElem) {
-        // Tự động tạo ảnh đại diện theo tên (UI Avatars)
-        avatarElem.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=003049&color=fff`;
-    }
     
     // Kiểm tra xem có parameter truyền từ trang Dashboard sang không (VD: ?search=ORD.. hoặc ?status=0)
     const urlParams = new URLSearchParams(window.location.search);

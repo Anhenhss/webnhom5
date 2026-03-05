@@ -13,6 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Khởi tạo dữ liệu khi vừa vào trang
     loadAddresses();     // Tải sổ địa chỉ
     initRealLocations(); // Tải 63 tỉnh thành Việt Nam
+    // 4. KIỂM TRA XEM KHÁCH CÓ MUỐN MỞ TAB ĐƠN HÀNG KHÔNG
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabRequest = urlParams.get('tab');
+
+    if (tabRequest === 'orders') {
+        // Tự động click vào tab đơn hàng cho khách
+        const ordersTabBtn = document.querySelector('.profile-nav a[onclick*="orders-tab"]');
+        if (ordersTabBtn) {
+            ordersTabBtn.click();
+        }
+    }
 });
 
 // Biến lưu trữ dữ liệu Tỉnh/Thành

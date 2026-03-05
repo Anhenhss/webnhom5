@@ -31,5 +31,6 @@ namespace webnhom5.Services
         Task<int> AddSizeAsync(MasterDataDto dto);
         Task<bool> ToggleProductStatusAsync(int id);
         Task<List<ReviewResponseDto>> GetReviewsByProductIdAsync(int productId);
+        Task<ReviewResponseDto> CreateReviewAsync(int userId, CreateReviewDto dto);
     }
 }

@@ -32,7 +32,7 @@ function showToast(message, type = 'success') {
     setTimeout(() => { toast.remove(); }, 3000);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => { 
     // 1. KẾT NỐI TỪ KHÓA TÌM KIẾM TỪ TRANG CHỦ (Nếu có)
     const urlParams = new URLSearchParams(window.location.search);
     const searchKeyword = urlParams.get('search');
@@ -43,25 +43,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (searchInput) searchInput.value = searchKeyword;
     }
 
-    // ĐỌC DANH MỤC NẾU CLICK TỪ TRANG CHỦ (Bổ sung phần này)
+    // ĐỌC DANH MỤC NẾU CLICK TỪ TRANG CHỦ
     const urlCatId = urlParams.get('catId');
     if (urlCatId) {
         activeFilters.categoryId = parseInt(urlCatId);
     }
 
-    // 2. TẢI DỮ LIỆU
-    loadMasterData();
-    loadProducts();
+    // 2. TẢI DỮ LIỆU (👉 Thêm await để bắt buộc chạy theo thứ tự)
+    await loadMasterData(); // Phải tải xong Cây danh mục (để lấy ID cha/con)
+    await loadProducts();   // Xong xuôi mới được tải và lọc sản phẩm
 
     // 3. SỰ KIỆN LIVE SEARCH TẠI TRANG SHOP
     const liveSearchInput = document.getElementById('global-search-input') || document.getElementById('live-search');
     if (liveSearchInput) {
         liveSearchInput.addEventListener('input', (e) => {
             activeFilters.keyword = e.target.value.toLowerCase().trim();
-            currentPage = 1; // Reset về trang 1
+            currentPage = 1; 
             applyFilters();
             
-            // Cập nhật lại URL cho chuẩn
             const newUrl = new URL(window.location);
             if (activeFilters.keyword) newUrl.searchParams.set('search', activeFilters.keyword);
             else newUrl.searchParams.delete('search');
@@ -92,15 +91,22 @@ function renderCategories(categories) {
     const ul = document.getElementById('filter-categories');
     if (!ul) return;
     
-    ul.innerHTML = `<li class="active cat-parent" onclick="toggleCategory(null, this)">Tất cả thiết kế</li>`;
+    // Nếu activeFilters.categoryId bị rỗng (null) thì mới in đậm chữ "Tất cả thiết kế"
+    const isAllActive = activeFilters.categoryId === null ? 'active' : '';
+    ul.innerHTML = `<li class="${isAllActive} cat-parent" onclick="toggleCategory(null, this)">Tất cả thiết kế</li>`;
     
     categories.forEach(parentCat => {
-        let html = `<li class="cat-parent" onclick="toggleCategory(${parentCat.id}, this)">${parentCat.name}</li>`;
+        // Kiểm tra xem danh mục cha này có khớp với ID trên URL không
+        const isParentActive = activeFilters.categoryId === parentCat.id ? 'active' : '';
+        let html = `<li class="${isParentActive} cat-parent" onclick="toggleCategory(${parentCat.id}, this)">${parentCat.name}</li>`;
+        
         // Nếu có danh mục con
         if (parentCat.children && parentCat.children.length > 0) {
             html += `<ul class="cat-children-list">`;
             parentCat.children.forEach(childCat => {
-                html += `<li onclick="toggleCategory(${childCat.id}, this)">${childCat.name}</li>`;
+                // Kiểm tra xem danh mục con này có khớp với ID trên URL không
+                const isChildActive = activeFilters.categoryId === childCat.id ? 'active' : '';
+                html += `<li class="${isChildActive}" onclick="toggleCategory(${childCat.id}, this)">${childCat.name}</li>`;
             });
             html += `</ul>`;
         }
@@ -236,21 +242,31 @@ function clearFilters() {
 // ==========================================
 
 // Hàm đệ quy tìm tất cả ID danh mục con thuộc danh mục cha
+// Hàm đệ quy tìm tất cả ID danh mục con thuộc danh mục cha
 function getAllCategoryIdsToFilter(catId) {
-    let ids = [catId];
+    let ids = [];
+    let targetNode = null;
+
+    // Quét tìm Node danh mục cha
     const findNode = (nodes) => {
         for (let n of nodes) {
-            if (n.id === catId) return n;
-            if (n.children) {
-                let found = findNode(n.children);
-                if (found) return found;
-            }
+            if (n.id === catId) { targetNode = n; return; }
+            if (n.children && n.children.length > 0) findNode(n.children);
         }
-        return null;
     };
-    const node = findNode(categoryTreeData);
-    if (node && node.children) {
-        node.children.forEach(c => ids.push(c.id));
+    findNode(categoryTreeData);
+
+    // Nếu tìm thấy, đệ quy lấy id của nó và TẤT CẢ các con cháu
+    if (targetNode) {
+        const collectIds = (node) => {
+            ids.push(node.id);
+            if (node.children) {
+                node.children.forEach(collectIds);
+            }
+        };
+        collectIds(targetNode);
+    } else {
+        ids.push(catId); // Dự phòng
     }
     return ids;
 }
@@ -362,6 +378,16 @@ function renderProductsForCurrentPage() {
                 <div class="product-info">
                     <div class="product-brand">${p.categoryName || 'WebNhom5 Exclusive'}</div>
                     <h4 class="product-name" title="${p.name}">${p.name}</h4>
+                    
+                    <div style="color: #FFC107; font-size: 0.95rem; margin: 4px 0; display:flex; justify-content:center; gap:2px;">
+                        <i class="ph-fill ph-star"></i>
+                        <i class="ph-fill ph-star"></i>
+                        <i class="ph-fill ph-star"></i>
+                        <i class="ph-fill ph-star"></i>
+                        <i class="ph-fill ph-star"></i>
+                        <span style="color:#888; font-size:0.8rem; margin-left:4px;">(5.0)</span>
+                    </div>
+
                     <div class="product-price">${new Intl.NumberFormat('vi-VN').format(p.price)} ₫</div>
                     <div style="font-size:0.8rem; color:#888; margin-top:5px;">Đã bán ${p.soldCount || 0}</div>
                 </div>

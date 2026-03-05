@@ -9,6 +9,7 @@ namespace webnhom5.DTOs
         public int TotalVisitors { get; set; } // Có thể fake số hoặc làm bảng Tracking sau
         public int PendingOrdersCount { get; set; } // Số đơn đang chờ duyệt
         public int LowStockProductsCount { get; set; } // Số sản phẩm tồn kho <= 5
+        public int TotalProducts { get; set; }
     }
 
     // DTO trả về riêng cho Top sản phẩm (nhẹ hơn ProductResponseDto)

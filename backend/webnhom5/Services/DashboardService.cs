@@ -50,6 +50,8 @@ namespace webnhom5.Services
                 .Where(p => p.IsActive == true)
                 .CountAsync(p => p.ProductVariants.Sum(v => v.Quantity) <= 5);
 
+            int totalProducts = await _context.Products.CountAsync(); // Có thể thêm .Where(p => p.IsActive == true) nếu chỉ muốn đếm sp đang bán
+
             return new DashboardOverviewDto
             {
                 TotalRevenue = totalRevenue,
@@ -57,7 +59,8 @@ namespace webnhom5.Services
                 TotalUsers = totalUsers,
                 TotalVisitors = 0, // Tính năng Tracking mở rộng sau
                 PendingOrdersCount = pendingOrdersCount,
-                LowStockProductsCount = lowStockCount
+                LowStockProductsCount = lowStockCount,
+                TotalProducts = totalProducts
             };
         }
 

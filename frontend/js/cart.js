@@ -1,3 +1,4 @@
+const BACKEND_URL = 'http://localhost:5195';
 document.addEventListener('DOMContentLoaded', () => {
     loadCartData();
 });
@@ -34,11 +35,17 @@ function renderCartTable() {
     tbody.innerHTML = '';
 
     currentCart.forEach((item, index) => {
+        // Fix đường dẫn ảnh tuyệt đối
+        let imgUrl = 'image/placeholder.jpg';
+        if (item.productImage) {
+            imgUrl = item.productImage.startsWith('http') ? item.productImage : BACKEND_URL + item.productImage;
+        }
+        
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>
                 <div class="cart-item-info">
-                    <img src="${item.productImage || 'image/placeholder.jpg'}" class="cart-item-img" alt="${item.productName}">
+                    <img src="${imgUrl}" class="cart-item-img" alt="${item.productName}">
                     <div>
                         <div class="cart-item-title">${item.productName}</div>
                         <div class="cart-item-variant">Size: ${item.size} | Màu: ${item.color}</div>
@@ -95,16 +102,29 @@ async function updateQuantity(index, change) {
     }
 }
 
-async function removeItem(itemId) {
-    if (!confirm("Bạn muốn xóa sản phẩm này khỏi giỏ hàng?")) return;
+function removeItem(itemId) {
+    console.log("ID thực sự của dòng giỏ hàng cần xóa là:", itemId); 
 
-    try {
-        await apiFetch(`/cart/remove/${itemId}`, { method: 'DELETE' });
-        showToast("Đã xóa sản phẩm", "success");
-        loadCartData(); 
-    } catch (error) {
-        console.error("Lỗi xóa item", error);
-    }
+    showConfirmModal(
+        "Xóa Sản Phẩm?", 
+        "Bạn có chắc chắn muốn bỏ sản phẩm này ra khỏi giỏ hàng không?", 
+        "Đồng ý xóa", 
+        async () => {
+            try {
+                await apiFetch(`/cart/remove/${itemId}`, { method: 'DELETE' });
+                showToast("Đã xóa sản phẩm khỏi giỏ hàng", "success");
+                
+                loadCartData(); // Tải lại bảng ngay lập tức
+                
+                // Cập nhật lại số lượng bong bóng đỏ trên Header
+                if (typeof updateGlobalCartBadge === 'function') {
+                    updateGlobalCartBadge(); 
+                }
+            } catch (error) {
+                console.error("Lỗi xóa item", error);
+            }
+        }
+    );
 }
 
 function calculateTotal() {

@@ -26,5 +26,7 @@ namespace webnhom5.Services
 
         Task DeleteAddressAsync(int userId, int addressId);
         Task<bool> CreateAccountAsync(CreateAccountDto dto);
+        Task<User> UpdateUserAsync(int id, UpdateUserDto dto);
+        Task DeleteUserAsync(int id);
     }
 }

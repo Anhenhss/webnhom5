@@ -20,7 +20,7 @@
                 <a href="admin-orders.html" class="nav-item"><i class="ph ph-receipt"></i> Đơn hàng</a>
                 <a href="admin-products.html" class="nav-item"><i class="ph ph-package"></i> Sản phẩm</a>
                 <a href="admin-categories.html" class="nav-item"><i class="ph ph-list-dashes"></i> Danh mục</a>
-                <a href="admin-users.html" class="nav-item"><i class="ph ph-users"></i> Quản trị Hệ thống</a>
+                <a href="admin-users.html" class="nav-item"><i class="ph ph-users"></i> Quản trị hệ thống</a>
                 <a href="admin-marketing.html" class="nav-item"><i class="ph ph-tag"></i> Khuyến mãi</a>
                 <a href="admin-reports.html" class="nav-item"><i class="ph ph-chart-line-up"></i> Báo cáo doanh thu</a>
             </nav>
@@ -41,7 +41,7 @@
                         <span class="notify-badge" id="new-order-badge" style="display: none;"></span>
                     </button>
                     <div class="profile-info">
-                        <img src="" class="avatar" id="admin-avatar">
+                        <i class="ph ph-user"></i></a>
                         <span class="admin-name" id="display-admin-name">Đang tải...</span>
                     </div>
                     <button class="btn-logout" onclick="logout()" title="Đăng xuất"><i class="ph ph-sign-out"></i></button>
@@ -69,6 +69,7 @@
                             <h3 class="stat-value" id="stat-revenue">0 ₫</h3>
                         </div>
                     </div>
+                    
                     <div class="stat-card">
                         <div class="stat-icon" style="color: var(--color-primary); background-color: #E6F0F5;">
                             <i class="ph-fill ph-receipt"></i>
@@ -78,12 +79,23 @@
                             <h3 class="stat-value" id="stat-orders">0</h3>
                         </div>
                     </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #8E44AD; background-color: #F3E5F5;">
+                            <i class="ph-fill ph-package"></i>
+                        </div>
+                        <div class="stat-details">
+                            <p class="stat-label">Tổng Sản Phẩm</p>
+                            <h3 class="stat-value" id="stat-products">0</h3>
+                        </div>
+                    </div>
+
                     <div class="stat-card">
                         <div class="stat-icon" style="color: var(--color-accent-dark); background-color: #F8E6E6;">
                             <i class="ph-fill ph-users"></i>
                         </div>
                         <div class="stat-details">
-                            <p class="stat-label">Tổng khách & Nhân viên</p>
+                            <p class="stat-label">Khách & Nhân viên</p>
                             <h3 class="stat-value" id="stat-users">0</h3>
                         </div>
                     </div>
@@ -96,6 +108,7 @@
                             <h3 class="stat-value" id="stat-visitors">0</h3>
                         </div>
                     </div>
+
                 </div>
 
                 <div class="dashboard-grid">

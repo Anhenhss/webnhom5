@@ -37,5 +37,18 @@ namespace webnhom5.Controllers
             await _marketingService.GenerateCouponsAsync(dto);
             return Ok(new { message = "Đã sinh mã voucher thành công" });
         }
+        [HttpDelete("promotions/{id}")]
+        public async Task<IActionResult> DeletePromotion(int id)
+        {
+            try
+            {
+                await _marketingService.DeletePromotionAsync(id);
+                return Ok(new { message = "Đã xóa chương trình thành công" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

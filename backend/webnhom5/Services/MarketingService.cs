@@ -39,7 +39,7 @@ namespace webnhom5.Services
             };
 
             _context.Promotions.Add(promo);
-            await _context.SaveChangesAsync(); 
+            await _context.SaveChangesAsync();
 
             if (dto.Conditions != null && dto.Conditions.Any())
             {
@@ -63,7 +63,7 @@ namespace webnhom5.Services
         {
             var userIds = await _context.Users.Select(u => u.Id).ToListAsync();
             var targetUsers = userIds.Take(dto.Quantity).ToList();
-            
+
             foreach (var uid in targetUsers)
             {
                 var code = dto.Prefix + "-" + Guid.NewGuid().ToString().Substring(0, 6).ToUpper();
@@ -84,9 +84,9 @@ namespace webnhom5.Services
         public async Task<PromotionCalculationResult> CalculateDiscountAsync(List<CartItem> cartItems) // Sửa CartItems -> CartItem
         {
             // Xử lý giá trị Nullable bằng cách sử dụng ?? 0
-            decimal totalCartValue = cartItems.Sum(c => 
+            decimal totalCartValue = cartItems.Sum(c =>
                 ((c.Product?.Price ?? 0) + (c.ProductVariant?.PriceModifier ?? 0)) * (c.Quantity ?? 0));
-            
+
             var result = new PromotionCalculationResult
             {
                 OriginalTotal = totalCartValue,
@@ -96,8 +96,8 @@ namespace webnhom5.Services
 
             var activePromos = await _context.Promotions
                 .Include(p => p.PromotionConditions)
-                .Where(p => p.IsActive == true 
-                            && p.StartDate <= DateTime.Now 
+                .Where(p => p.IsActive == true
+                            && p.StartDate <= DateTime.Now
                             && p.EndDate >= DateTime.Now)
                 .OrderByDescending(p => p.Priority)
                 .ToListAsync();
@@ -106,7 +106,7 @@ namespace webnhom5.Services
             {
                 // Sửa PromotionCondition -> PromotionConditions (số nhiều theo chuẩn DBContext)
                 bool isEligible = CheckConditions(promo.PromotionConditions.ToList(), cartItems, totalCartValue);
-                
+
                 if (isEligible)
                 {
                     decimal discount = 0;
@@ -122,8 +122,8 @@ namespace webnhom5.Services
                     result.DiscountAmount = discount;
                     result.FinalTotal = totalCartValue - discount;
                     result.AppliedPromotionName = promo.Name;
-                    
-                    break; 
+
+                    break;
                 }
             }
 
@@ -154,15 +154,31 @@ namespace webnhom5.Services
                             if (cond.Operator == "IN" && cartItems.Any(c => c.Product?.CategoryId == targetCatId)) pass = true;
                         }
                         break;
-                    
+
                     default:
-                        pass = true; 
+                        pass = true;
                         break;
                 }
 
-                if (!pass) return false; 
+                if (!pass) return false;
             }
             return true;
+        }
+        public async Task DeletePromotionAsync(int id)
+        {
+            var promo = await _context.Promotions.FindAsync(id);
+            if (promo == null) throw new Exception("Không tìm thấy chương trình khuyến mãi.");
+
+            // BẢO VỆ DỮ LIỆU: Nếu chương trình này đã sinh mã Coupon rồi thì KHÔNG ĐƯỢC XÓA
+            // Chỉ được phép sửa trạng thái IsActive = false (Kết thúc sớm)
+            bool hasCoupons = await _context.Coupons.AnyAsync(c => c.PromotionId == id);
+            if (hasCoupons)
+            {
+                throw new Exception("Không thể xóa vì chương trình này đã phát hành mã Coupon. Hãy chỉnh sửa ngày kết thúc để dừng chương trình!");
+            }
+
+            _context.Promotions.Remove(promo);
+            await _context.SaveChangesAsync();
         }
     }
 }

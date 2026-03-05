@@ -191,5 +191,29 @@ namespace webnhom5.Controllers
             var reviews = await _service.GetReviewsByProductIdAsync(productId);
             return Ok(reviews);
         }
+        [HttpPost("reviews")]
+        [Authorize] // BẮT BUỘC KHÁCH PHẢI ĐĂNG NHẬP MỚI ĐƯỢC ĐÁNH GIÁ
+        public async Task<IActionResult> CreateReview([FromBody] CreateReviewDto dto)
+        {
+            try
+            {
+                // Lấy ID của khách hàng đang đăng nhập từ Token (JWT)
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) 
+                            ?? User.FindFirst("nameid");
+                            
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return Unauthorized(new { message = "Vui lòng đăng nhập lại để đánh giá." });
+                }
+
+                // Gọi Service xử lý
+                var result = await _service.CreateReviewAsync(userId, dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

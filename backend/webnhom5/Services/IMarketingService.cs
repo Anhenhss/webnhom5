@@ -9,13 +9,14 @@ namespace webnhom5.Services
     public interface IMarketingService
     {
         Task<List<Promotion>> GetAllPromotionsAsync();
-        
+
         Task<Promotion> CreatePromotionAsync(CreatePromotionDto dto);
-        
+
         Task GenerateCouponsAsync(GenerateCouponDto dto);
-        
+
         // PROMOTION ENGINE: Logic tính giá
         // Đã sửa CartItems thành CartItem để khớp với Model số ít
         Task<PromotionCalculationResult> CalculateDiscountAsync(List<CartItem> cartItems);
+        Task DeletePromotionAsync(int id);
     }
 }

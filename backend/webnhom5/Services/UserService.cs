@@ -60,7 +60,60 @@ namespace webnhom5.Services
                 GoogleId = u.GoogleId
             };
         }
+        // ==========================================
+        // LOGIC SỬA NGƯỜI DÙNG
+        // ==========================================
+        public async Task<User> UpdateUserAsync(int id, UpdateUserDto dto)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) 
+                throw new Exception("Không tìm thấy tài khoản.");
 
+            // Nếu muốn đổi sang Email khác, phải kiểm tra xem Email mới có ai dùng chưa
+            if (user.Email.ToLower() != dto.Email.ToLower())
+            {
+                bool emailExists = await _context.Users.AnyAsync(u => u.Email == dto.Email);
+                if (emailExists) 
+                    throw new Exception("Email này đã được sử dụng bởi một tài khoản khác.");
+                
+                user.Email = dto.Email;
+            }
+
+            // Cập nhật thông tin cơ bản
+            user.FullName = dto.FullName;
+            user.Role = dto.Role;
+
+            // XỬ LÝ MẬT KHẨU: Chỉ cập nhật nếu Admin có nhập mật khẩu mới vào Form
+            if (!string.IsNullOrWhiteSpace(dto.Password))
+            {
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            }
+
+            await _context.SaveChangesAsync();
+            return user;
+        }
+
+        // ==========================================
+        // LOGIC XÓA NGƯỜI DÙNG
+        // ==========================================
+        public async Task DeleteUserAsync(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) 
+                throw new Exception("Không tìm thấy tài khoản.");
+
+            // BẢO VỆ DỮ LIỆU: Không cho phép xóa khách hàng đã có đơn hàng
+            // Vì nếu xóa sẽ làm mất lịch sử đơn hàng và doanh thu của hệ thống
+            bool hasOrders = await _context.Orders.AnyAsync(o => o.UserId == id);
+            if (hasOrders)
+            {
+                throw new Exception("Không thể xóa! Khách hàng này đã từng phát sinh đơn hàng. Bạn chỉ nên Khóa tài khoản này lại.");
+            }
+
+            // Nếu an toàn (chưa có đơn), tiến hành xóa
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+        }
         // Khóa hoặc Mở khóa tài khoản
         public async Task LockUserAsync(int userId, bool isLocked)
         {

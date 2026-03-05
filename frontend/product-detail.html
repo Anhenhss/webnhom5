@@ -9,27 +9,7 @@
     <link rel="stylesheet" href="css/product-detail.css">
 </head>
 <body>
-    <header class="site-header">
-        <div class="logo-wrapper">
-            <img src="image/logo.png" alt="Logo" onerror="this.src='https://ui-avatars.com/api/?name=W5&background=003049&color=fff'">
-            <span class="brand-name">WebNhom5</span>
-        </div>
-        
-        <nav class="main-nav">
-            <a href="index.html">Trang chủ</a>
-            <a href="shop.html" class="active">Sản phẩm</a>
-            <a href="about.html">Về chúng tôi</a>
-        </nav>
-
-        <div class="header-actions">
-            <div class="search-box">
-                <input type="text" id="global-search-input" placeholder="Tìm kiếm sản phẩm...">
-                <i class="ph ph-magnifying-glass" id="global-search-btn" style="cursor: pointer;"></i>
-            </div>
-            <a href="cart.html" class="icon-link"><i class="ph ph-shopping-bag"></i></a>
-            <a href="login.html" class="icon-link"><i class="ph ph-user"></i></a>
-        </div>
-    </header>
+    <div id="global-header-placeholder"></div>
 
     <main class="pd-container">
         <div class="breadcrumb" id="breadcrumb">
@@ -113,7 +93,21 @@
                     </div>
                     <p id="total-reviews-text">0 đánh giá</p>
                 </div>
-                
+                <div class="write-review-box" id="write-review-box" style="display: none; background: #f9f9f9; padding: 25px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #eee;">
+                    <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--color-primary);">Viết đánh giá của bạn</h3>
+                    
+                    <div id="star-rating-input" style="font-size: 1.8rem; margin-bottom: 15px; cursor: pointer;">
+                        <i class="ph-fill ph-star" data-val="1"></i>
+                        <i class="ph-fill ph-star" data-val="2"></i>
+                        <i class="ph-fill ph-star" data-val="3"></i>
+                        <i class="ph-fill ph-star" data-val="4"></i>
+                        <i class="ph-fill ph-star" data-val="5"></i>
+                    </div>
+                    
+                    <textarea id="review-comment" rows="3" style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; resize: vertical;" placeholder="Chia sẻ cảm nhận của bạn về chất lượng sản phẩm..."></textarea>
+                    
+                    <button class="btn btn-primary" style="margin-top: 15px; padding: 10px 25px;" onclick="submitReview()">Gửi đánh giá</button>
+                </div>
                 <div class="review-list" id="review-list">
                     <p style="text-align: center; color: var(--text-muted);">Đang tải đánh giá...</p>
                 </div>
