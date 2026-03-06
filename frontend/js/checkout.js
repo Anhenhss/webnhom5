@@ -1,24 +1,32 @@
 document.addEventListener('DOMContentLoaded', () => {
     loadCheckoutSummary();
-    initRealLocations(); // Gọi API Tỉnh Thành thật
+    initRealLocations(); // Gọi API Tỉnh Thành thật từ Open API
 });
 
+// Hàm hỗ trợ format tiền tệ
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 };
 
+// ==========================================
+// CÁC BIẾN TOÀN CỤC LƯU TRỮ TRẠNG THÁI
+// ==========================================
 let subtotal = 0;
 let shippingFee = 0;
 let itemCount = 0;
-let locationData = []; // Lưu trữ dữ liệu 63 tỉnh thành
+let locationData = []; 
 let discountAmount = 0;
 let appliedCouponCode = "";
-// 1. Tải dữ liệu giỏ hàng
+
+// ==========================================
+// 1. TẢI DỮ LIỆU GIỎ HÀNG TỪ BACKEND
+// ==========================================
 async function loadCheckoutSummary() {
     try {
         const response = await apiFetch('/cart');
         const cartItems = response.items || response;
 
+        // Nếu giỏ hàng trống, lập tức đá về trang cart
         if (!cartItems || cartItems.length === 0) {
             window.location.href = "cart.html"; 
             return;
@@ -38,7 +46,9 @@ async function loadCheckoutSummary() {
     }
 }
 
-// 2. Gọi API Dữ liệu Tỉnh/Thành Phố VN (provinces.open-api.vn)
+// ==========================================
+// 2. GỌI API LẤY TỈNH/THÀNH PHỐ VIỆT NAM THẬT
+// ==========================================
 async function initRealLocations() {
     try {
         const response = await fetch('https://provinces.open-api.vn/api/?depth=3');
@@ -60,12 +70,11 @@ async function initRealLocations() {
     }
 }
 
-// Khi người dùng chọn Tỉnh / Thành phố
+// Khi chọn Tỉnh/Thành phố -> Load Quận/Huyện
 document.getElementById('province').addEventListener('change', function() {
     const provinceCode = parseInt(this.value);
     const province = locationData.find(p => p.code === provinceCode);
     
-    // Đổ dữ liệu Quận/Huyện
     const districtSelect = document.getElementById('district');
     districtSelect.innerHTML = '<option value="" disabled selected>Chọn Quận/Huyện</option>';
     document.getElementById('ward').innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
@@ -78,12 +87,12 @@ document.getElementById('province').addEventListener('change', function() {
             districtSelect.add(opt);
         });
         
-        // Tính phí vận chuyển theo tên tỉnh
+        // Cập nhật phí ship ngay lập tức khi biết tỉnh
         calculateShipping(province.name);
     }
 });
 
-// Khi người dùng chọn Quận / Huyện
+// Khi chọn Quận/Huyện -> Load Phường/Xã
 document.getElementById('district').addEventListener('change', function() {
     const provinceCode = parseInt(document.getElementById('province').value);
     const districtCode = parseInt(this.value);
@@ -91,7 +100,6 @@ document.getElementById('district').addEventListener('change', function() {
     const province = locationData.find(p => p.code === provinceCode);
     const district = province.districts.find(d => d.code === districtCode);
     
-    // Đổ dữ liệu Phường/Xã
     const wardSelect = document.getElementById('ward');
     wardSelect.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
     
@@ -105,10 +113,10 @@ document.getElementById('district').addEventListener('change', function() {
     }
 });
 
-// 3. Tính phí ship ngầm dựa vào string tên Tỉnh/Thành 
+// ==========================================
+// 3. LOGIC TÍNH PHÍ VẬN CHUYỂN & TỔNG TIỀN
+// ==========================================
 function calculateShipping(provinceName) {
-    // API trả về có thể là "Tỉnh Đồng Nai", "Thành phố Hồ Chí Minh", "Thành phố Hà Nội"...
-    // Nên ta dùng "includes" cho an toàn
     if (provinceName.includes("Đồng Nai") || 
         provinceName.includes("Hồ Chí Minh") || 
         provinceName.includes("Hà Nội")) {
@@ -123,13 +131,54 @@ function calculateShipping(provinceName) {
 
 function updateGrandTotal() {
     let total = subtotal + shippingFee - discountAmount;
-    if (total < 0) total = 0; // Không để tổng tiền bị âm
+    if (total < 0) total = 0; // Chống bug tiền âm nếu giảm giá quá sâu
     document.getElementById('total-amount').innerText = formatCurrency(total);
 }
 
-// 4. Xử lý Đặt hàng
+// ==========================================
+// 4. API KIỂM TRA MÃ GIẢM GIÁ (VOUCHER)
+// ==========================================
+async function applyCoupon() {
+    const code = document.getElementById('voucher-code').value.trim().toUpperCase();
+    const msgEl = document.getElementById('voucher-message');
+
+    if (!code) {
+        msgEl.innerHTML = '<span style="color: var(--color-accent-dark);">Vui lòng nhập mã giảm giá!</span>';
+        return;
+    }
+
+    try {
+        msgEl.innerHTML = '<span style="color: var(--text-muted);">Đang kiểm tra mã...</span>';
+        
+        // Gọi API C# (Đảm bảo em đã tạo hàm ApplyCouponAsync trong C# như bài trước)
+        const response = await apiFetch(`/cart/apply-coupon?code=${code}`, { method: 'POST' });
+
+        // Nếu mã hợp lệ, C# sẽ trả về object chứa discountAmount
+        discountAmount = response.discountAmount;
+        appliedCouponCode = code;
+        
+        msgEl.innerHTML = `<span style="color: #2e7d32;"><i class="ph-fill ph-check-circle"></i> Áp dụng thành công: ${response.appliedPromotionName}</span>`;
+        document.getElementById('discount-row').style.display = 'flex';
+        document.getElementById('discount-amount').innerText = '-' + formatCurrency(discountAmount);
+        
+        updateGrandTotal();
+
+    } catch (error) {
+        // apiFetch sẽ tự động quăng lỗi (vd: Mã hết hạn, sai mã)
+        msgEl.innerHTML = `<span style="color: var(--color-accent-dark);"><i class="ph-fill ph-warning-circle"></i> ${error.message || "Mã không hợp lệ!"}</span>`;
+        discountAmount = 0;
+        appliedCouponCode = "";
+        document.getElementById('discount-row').style.display = 'none';
+        updateGrandTotal();
+    }
+}
+
+// ==========================================
+// 5. XỬ LÝ ĐẶT HÀNG & CHUYỂN HƯỚNG VNPAY/MOMO
+// ==========================================
 async function submitOrder() {
     const form = document.getElementById('checkout-form');
+    // Kiểm tra các trường HTML5 (required)
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
@@ -144,6 +193,7 @@ async function submitOrder() {
         return;
     }
 
+    // Thu thập dữ liệu form
     const name = document.getElementById('shippingName').value.trim();
     const phone = document.getElementById('shippingPhone').value.trim();
     const province = pSelect.options[pSelect.selectedIndex].text;
@@ -159,7 +209,7 @@ async function submitOrder() {
         ShippingPhone: phone,
         ShippingAddress: fullAddress,
         PaymentMethod: paymentMethod,
-        CouponCode: appliedCouponCode // Gửi mã giảm giá lên C# nếu có
+        CouponCode: appliedCouponCode // Gửi mã giảm giá lên để C# ghi đè giá cuối
     };
 
     try {
@@ -167,32 +217,35 @@ async function submitOrder() {
         btnCheckout.disabled = true;
         btnCheckout.innerText = "Đang xử lý...";
 
+        // Bắn API Tạo Đơn
         const response = await apiFetch('/cart/checkout', {
             method: 'POST',
             body: JSON.stringify(payload)
         });
 
-        // =========================================================
-        // LOGIC ĐIỀU HƯỚNG THANH TOÁN (COD, VNPAY, MOMO)
-        // =========================================================
-        if (paymentMethod === 'VNPAY') {
-            showToast("Đang chuyển hướng sang cổng thanh toán VNPAY...", "success");
-            
-            // 👉 NẾU C# CỦA EM TRẢ VỀ LINK THẬT:
-            // if (response.paymentUrl) { window.location.href = response.paymentUrl; return; }
+        const finalTotal = subtotal + shippingFee - discountAmount;
 
-            // 👉 MÔ PHỎNG HIỆU ỨNG CHO ĐỒ ÁN:
-            setTimeout(() => {
-                alert(`[MÔ PHỎNG API] Sẽ chuyển hướng đến VNPAY.\nMã ĐH: ${response.orderCode}\nSố tiền: ${formatCurrency(subtotal + shippingFee - discountAmount)}`);
-                window.location.href = `success.html?code=${response.orderCode}`;
-            }, 1500);
-        } 
-        else if (paymentMethod === 'MOMO') {
-            showToast("Đang mở cổng thanh toán MoMo...", "success");
-            setTimeout(() => {
-                alert(`[MÔ PHỎNG API] Sẽ mở mã QR MoMo cho đơn hàng ${response.orderCode}.`);
-                window.location.href = `success.html?code=${response.orderCode}`;
-            }, 1500);
+        // ĐIỀU HƯỚNG CỔNG THANH TOÁN (MỞ MODAL GIẢ LẬP)
+        if (paymentMethod === 'VNPAY' || paymentMethod === 'MOMO') {
+            const modal = document.getElementById('payment-modal');
+            const logo = document.getElementById('payment-logo');
+            
+            // Đổi Logo theo phương thức
+            if(paymentMethod === 'VNPAY') {
+                logo.src = "https://vnpay.vn/wp-content/uploads/2020/07/Logo-VNPAYQR-update.png";
+            } else {
+                logo.src = "https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png";
+            }
+
+            // Điền thông tin vào Modal
+            document.getElementById('payment-order-code').innerText = response.orderCode;
+            document.getElementById('payment-amount').innerText = formatCurrency(finalTotal);
+            
+            // Lưu tạm mã đơn vào một thuộc tính ẩn để dùng cho nút "Đã chuyển khoản"
+            document.getElementById('btn-confirm-payment').setAttribute('data-order', response.orderCode);
+            
+            // Hiện Modal
+            modal.style.display = 'flex';
         } 
         else {
             // Thanh toán COD (Tiền mặt)
@@ -206,4 +259,32 @@ async function submitOrder() {
         document.querySelector('.btn-checkout').disabled = false;
         document.querySelector('.btn-checkout').innerText = "Đặt hàng ngay";
     }
+}
+function cancelPayment() {
+    document.getElementById('payment-modal').style.display = 'none';
+    showToast("Đã hủy thanh toán. Đơn hàng của bạn đã được ghi nhận chờ xử lý.", "warning");
+    
+    // Đá về trang lịch sử đơn hàng
+    setTimeout(() => {
+        window.location.href = `profile.html?tab=orders`; 
+    }, 2000);
+}
+
+function confirmFakePayment() {
+    const btn = document.getElementById('btn-confirm-payment');
+    btn.innerHTML = '<i class="ph-fill ph-spinner-gap"></i> Đang xác nhận...';
+    btn.disabled = true;
+
+    // Giả lập thời gian ngân hàng xử lý
+    setTimeout(() => {
+        document.getElementById('payment-modal').style.display = 'none';
+        showToast("Thanh toán thành công!", "success");
+        
+        const orderCode = btn.getAttribute('data-order');
+        // LÝ THUYẾT: Chỗ này sẽ gọi API C# để update Status đơn hàng thành "Đã thanh toán"
+        
+        setTimeout(() => {
+            window.location.href = `success.html?code=${orderCode}`; 
+        }, 1500);
+    }, 2000);
 }

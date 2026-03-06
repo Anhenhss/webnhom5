@@ -18,5 +18,6 @@ namespace webnhom5.Services
         // Đã sửa CartItems thành CartItem để khớp với Model số ít
         Task<PromotionCalculationResult> CalculateDiscountAsync(List<CartItem> cartItems);
         Task DeletePromotionAsync(int id);
+        Task<PromotionCalculationResult> ApplyCouponAsync(int userId, string couponCode);
     }
 }

@@ -23,5 +23,6 @@ namespace webnhom5.Services
         // --- STATISTICS ---
         Task<List<RevenueStatisticDto>> GetDailyRevenueAsync(int days);
         Task<List<OrderResponseDto>> GetMyOrdersAsync(int userId);
+        Task CancelOrderAsync(int userId, int orderId);
     }
 }

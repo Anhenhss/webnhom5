@@ -61,5 +61,18 @@ namespace webnhom5.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+        [HttpPost("apply-coupon")]
+        public async Task<IActionResult> ApplyCoupon([FromQuery] string code, [FromServices] IMarketingService marketingService)
+        {
+            try
+            {
+                var result = await marketingService.ApplyCouponAsync(GetUserId(), code);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

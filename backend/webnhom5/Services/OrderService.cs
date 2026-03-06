@@ -338,5 +338,43 @@ namespace webnhom5.Services
                     PaymentMethod = o.PaymentMethod
                 }).ToListAsync();
         }
+        // --- LOGIC HỦY ĐƠN CHO KHÁCH HÀNG ---
+        public async Task CancelOrderAsync(int userId, int orderId)
+        {
+            // 1. Tìm đơn hàng
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId);
+            
+            if (order == null) throw new Exception("Đơn hàng không tồn tại.");
+            
+            // 2. Chặn hủy nếu đã xử lý (Status > 0 nghĩa là đã xác nhận/đang giao...)
+            if (order.Status > 0) throw new Exception("Chỉ được hủy đơn hàng đang chờ xác nhận!");
+
+            // 3. Tiến hành Hủy (Trạng thái 4 = Đã hủy)
+            order.Status = 4;
+            
+            // 4. Hoàn kho (Cực kỳ quan trọng)
+            var details = await _context.OrderDetails.Where(d => d.OrderId == orderId).ToListAsync();
+            foreach(var item in details)
+            {
+                var variant = await _context.ProductVariants.FindAsync(item.ProductVariantId);
+                if (variant != null) 
+                {
+                    variant.Quantity += item.Quantity;
+                }
+            }
+
+            // 5. Ghi log lịch sử hủy đơn
+            _context.OrderStatusHistories.Add(new OrderStatusHistory
+            {
+                OrderId = orderId, 
+                PreviousStatus = 0, 
+                NewStatus = 4, 
+                Note = "Khách hàng tự hủy trên Web", 
+                UpdatedBy = "Customer", 
+                Timestamp = DateTime.Now
+            });
+
+            await _context.SaveChangesAsync();
+        }
     }
 }

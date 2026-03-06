@@ -180,5 +180,89 @@ namespace webnhom5.Services
             _context.Promotions.Remove(promo);
             await _context.SaveChangesAsync();
         }
+        public async Task<PromotionCalculationResult> ApplyCouponAsync(int userId, string couponCode)
+        {
+            // 1. Tìm mã Coupon trong DB
+            Promotion? promo = null;
+
+            if (couponCode == "SALE") 
+            {
+                promo = await _context.Promotions
+                    .Include(p => p.PromotionConditions)
+                    .FirstOrDefaultAsync(p => p.IsActive == true && p.StartDate <= DateTime.Now && p.EndDate >= DateTime.Now);
+                    
+                if (promo == null) throw new Exception("Hiện không có chương trình Khuyến mãi nào đang chạy!");
+            }
+            else 
+            {
+                // Logic cũ: Tìm theo mã Coupon chính xác
+                var coupon = await _context.Coupons
+                    .Include(c => c.Promotion)
+                    .ThenInclude(p => p.PromotionConditions)
+                    .FirstOrDefaultAsync(c => c.Code == couponCode);
+
+                if (coupon == null) throw new Exception("Mã giảm giá không tồn tại!");
+                if (coupon.IsUsed == true) throw new Exception("Mã giảm giá này đã được sử dụng!");
+                if (coupon.ExpiryDate < DateTime.Now) throw new Exception("Mã giảm giá đã hết hạn!");
+                
+                promo = coupon.Promotion;
+                if (promo == null || promo.IsActive != true || promo.StartDate > DateTime.Now || promo.EndDate < DateTime.Now)
+                {
+                    throw new Exception("Chương trình khuyến mãi của mã này đã kết thúc hoặc chưa bắt đầu!");
+                }
+            }
+
+            // 2. Lấy giỏ hàng của user
+            var cartItems = await _context.CartItems
+                .Include(c => c.Product)
+                .Include(c => c.ProductVariant)
+                .Where(c => c.UserId == userId)
+                .ToListAsync();
+
+            if (!cartItems.Any()) throw new Exception("Giỏ hàng của bạn đang trống!");
+
+            // 3. Tính tổng tiền giỏ hàng
+            decimal totalCartValue = cartItems.Sum(c => ((c.Product?.Price ?? 0) + (c.ProductVariant?.PriceModifier ?? 0)) * (c.Quantity ?? 0));
+
+            // 4. Kiểm tra điều kiện áp dụng (Fix thêm warning CS8602)
+            var conditionsList = promo.PromotionConditions?.ToList() ?? new List<PromotionCondition>();
+            bool isEligible = CheckConditions(conditionsList, cartItems, totalCartValue);
+            if (!isEligible) throw new Exception("Đơn hàng chưa đủ điều kiện để áp dụng mã này!");
+
+            // 5. Tính số tiền được giảm
+            decimal discount = 0;
+            if (promo.DiscountType == "PERCENTAGE")
+            {
+                // 👉 Bỏ "?? 0" đi, và dùng 100m
+                discount = totalCartValue * (promo.DiscountValue / 100m);
+            }
+            else if (promo.DiscountType == "FIXED_AMOUNT")
+            {
+                // 👉 Bỏ "?? 0" đi
+                discount = promo.DiscountValue;
+            }
+
+            // Không cho phép giảm lố tổng tiền
+            if (discount > totalCartValue) discount = totalCartValue;
+
+            return new PromotionCalculationResult
+            {
+                OriginalTotal = totalCartValue,
+                DiscountAmount = discount,
+                FinalTotal = totalCartValue - discount,
+                AppliedPromotionName = promo.Name
+            };
+
+            // Không cho phép giảm lố tổng tiền
+            if (discount > totalCartValue) discount = totalCartValue;
+
+            return new PromotionCalculationResult
+            {
+                OriginalTotal = totalCartValue,
+                DiscountAmount = discount,
+                FinalTotal = totalCartValue - discount,
+                AppliedPromotionName = promo.Name
+            };
+        }
     }
 }

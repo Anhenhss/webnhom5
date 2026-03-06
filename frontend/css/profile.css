@@ -151,5 +151,46 @@
 }
 .btn-link:hover { text-decoration: underline; }
 
-/* Dùng lại CSS Modal và Form từ admin.css cho nhanh */
-@import url('admin.css');
+/* ==========================================================================
+   MODAL SỔ ĐỊA CHỈ
+   ========================================================================== */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 48, 73, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10000;
+}
+
+.modal-content {
+    background: #fff; border-radius: 12px; box-width: 100%; max-width: 600px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    animation: modalPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 20px 30px; border-bottom: 1px solid #EAEAEA;
+    display: flex; justify-content: space-between; align-items: center;
+    background-color: #FAFAFA;
+}
+
+.modal-header h2 { font-size: 1.3rem; color: var(--color-primary); }
+.btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+.btn-close:hover { color: var(--color-accent-dark); }
+
+.modal-body { padding: 30px; }
+
+.form-grid { display: flex; gap: 20px; margin-bottom: 16px; }
+.form-group { flex: 1; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.form-group label { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+.form-control {
+    padding: 10px 14px; border: 1px solid #DDD; border-radius: 6px;
+    font-family: inherit; font-size: 0.95rem; transition: all 0.3s;
+}
+.form-control:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(0, 48, 73, 0.1); outline: none; }
+
+@keyframes modalPopIn {
+    0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}

@@ -144,6 +144,25 @@
         </div>
     </main>
 
+    <div class="modal-overlay" id="payment-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 450px; text-align: center; padding: 40px 30px;">
+            <img id="payment-logo" src="" alt="Payment Logo" style="height: 40px; margin: 0 auto 20px auto;">
+            <h2 style="color: var(--color-primary); margin-bottom: 10px;">Quét mã để thanh toán</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Đơn hàng: <strong id="payment-order-code">---</strong></p>
+            
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 12px; display: inline-block; margin-bottom: 20px; border: 2px dashed #ddd;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=DemoThanhToanWebNhom5" alt="QR Code">
+            </div>
+
+            <h3 style="color: var(--color-accent-dark); font-size: 1.8rem; margin-bottom: 30px;" id="payment-amount">0 ₫</h3>
+            
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button class="btn btn-outline" onclick="cancelPayment()">Hủy giao dịch</button>
+                <button class="btn btn-primary" id="btn-confirm-payment" style="background-color: #2e7d32; border: none;" onclick="confirmFakePayment()">Đã chuyển khoản</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="site-footer">
         <div class="footer-content">
             <div class="footer-col">

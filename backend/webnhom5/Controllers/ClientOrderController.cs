@@ -16,12 +16,26 @@ namespace webnhom5.Controllers
         {
             _orderService = orderService;
         }
-
+        private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         [HttpGet]
         public async Task<IActionResult> GetMyOrders()
         {
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             return Ok(await _orderService.GetMyOrdersAsync(userId));
+        }
+        [HttpPut("{orderId}/cancel")]
+        public async Task<IActionResult> CancelMyOrder(int orderId)
+        {
+            try
+            {
+                // Gọi Service xử lý hủy đơn
+                await _orderService.CancelOrderAsync(GetUserId(), orderId);
+                return Ok(new { message = "Hủy đơn hàng thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

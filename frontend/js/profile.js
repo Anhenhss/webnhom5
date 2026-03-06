@@ -161,45 +161,75 @@ async function deleteAddress(id) {
 }
 
 // ==========================================================================
-// QUẢN LÝ LỊCH SỬ ĐƠN HÀNG (API CỦA QUÝ)
+// QUẢN LÝ LỊCH SỬ ĐƠN HÀNG 
 // ==========================================================================
+let allMyOrders = []; // Khai báo thêm biến này ở đầu file profile.js để chứa danh sách gốc
+
 async function loadMyOrders() {
     try {
-        const orders = await apiFetch('/user/orders'); // Gọi API thật
-        const tbody = document.getElementById('my-orders-tbody');
-        tbody.innerHTML = '';
-
-        if (!orders || orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted" style="padding: 30px;">Bạn chưa có đơn đặt hàng nào.</td></tr>';
-            return;
-        }
-
-        orders.forEach(o => {
-            // Xử lý hiển thị ngày giờ đẹp mắt
-            const dateObj = new Date(o.orderDate);
-            const dateStr = `${dateObj.getHours()}:${dateObj.getMinutes().toString().padStart(2, '0')} ${dateObj.getDate()}/${dateObj.getMonth()+1}/${dateObj.getFullYear()}`;
-            
-            // Xử lý màu sắc của Nhãn trạng thái (Badge) để đồng bộ với Admin
-            let badgeClass = "badge-pending"; // Mặc định là màu vàng (Chờ xác nhận)
-            if (o.status === "Đã xác nhận") badgeClass = "badge-confirmed";
-            if (o.status === "Đang giao") badgeClass = "badge-shipping";
-            if (o.status === "Hoàn thành") badgeClass = "badge-completed";
-            if (o.status === "Đã hủy") badgeClass = "badge-cancelled";
-            if (o.status === "Giao thất bại") badgeClass = "badge-failed";
-
-            const tr = `
-                <tr>
-                    <td style="font-weight: 600; color: var(--color-primary);">${o.orderCode}</td>
-                    <td>${dateStr}</td>
-                    <td style="font-weight: 600; color: var(--color-accent-light);">${formatCurrency(o.finalAmount)}</td>
-                    <td><span class="badge ${badgeClass}">${o.status}</span></td>
-                </tr>
-            `;
-            tbody.insertAdjacentHTML('beforeend', tr);
-        });
-
+        const orders = await apiFetch('/user/orders');
+        allMyOrders = orders || []; // Lưu lại danh sách gốc để Lọc không cần gọi API nhiều lần
+        renderOrdersTable(allMyOrders);
     } catch (error) {
         console.error("Lỗi tải lịch sử đơn hàng:", error);
+    }
+}
+
+// 💥 HÀM MỚI: Render bảng đơn hàng
+function renderOrdersTable(orderList) {
+    const tbody = document.getElementById('my-orders-tbody');
+    tbody.innerHTML = '';
+
+    if (!orderList || orderList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding: 30px;">Không tìm thấy đơn hàng nào.</td></tr>';
+        return;
+    }
+
+    orderList.forEach(o => {
+        const dateObj = new Date(o.orderDate);
+        const dateStr = `${dateObj.getHours()}:${dateObj.getMinutes().toString().padStart(2, '0')} ${dateObj.getDate()}/${dateObj.getMonth()+1}/${dateObj.getFullYear()}`;
+        
+        let badgeClass = "badge-pending"; 
+        if (o.status === "Đã xác nhận") badgeClass = "badge-confirmed";
+        if (o.status === "Đang giao") badgeClass = "badge-shipping";
+        if (o.status === "Hoàn thành") badgeClass = "badge-completed";
+        if (o.status === "Đã hủy") badgeClass = "badge-cancelled";
+        if (o.status === "Giao thất bại") badgeClass = "badge-failed";
+
+        // 👉 TÍNH NĂNG MỚI: Nếu đang ở trạng thái 0 (Chờ xác nhận), cho phép HỦY
+        let actionHtml = '';
+        if (o.status === "Chờ xác nhận") {
+            actionHtml = `<button class="btn-link text-danger" style="font-size:0.85rem;" onclick="cancelMyOrder(${o.id}, '${o.orderCode}')">Hủy đơn</button>`;
+        }
+
+        const tr = `
+            <tr>
+                <td style="font-weight: 600; color: var(--color-primary);">${o.orderCode}</td>
+                <td>${dateStr}</td>
+                <td style="font-weight: 600; color: var(--color-accent-light);">${formatCurrency(o.finalAmount)}</td>
+                <td><span class="badge ${badgeClass}">${o.status}</span></td>
+                <td>${actionHtml}</td> </tr>
+        `;
+        tbody.insertAdjacentHTML('beforeend', tr);
+    });
+}
+
+// 💥 HÀM MỚI: Lọc trên giao diện
+function filterOrders(statusKeyword, btnElement) {
+    // Đổi màu nút
+    document.querySelectorAll('.order-status-tabs .btn').forEach(btn => {
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = 'var(--color-primary)';
+    });
+    btnElement.style.backgroundColor = 'var(--color-primary)';
+    btnElement.style.color = '#fff';
+
+    // Lọc danh sách
+    if (statusKeyword === null) {
+        renderOrdersTable(allMyOrders); // Hiện tất cả
+    } else {
+        const filtered = allMyOrders.filter(o => o.status === statusKeyword);
+        renderOrdersTable(filtered);
     }
 }
 
@@ -249,4 +279,14 @@ document.getElementById('addr-district').addEventListener('change', function() {
 function logout() {
     authManager.clear();
     window.location.href = 'login.html';
+}
+function cancelMyOrder(orderId, orderCode) {
+    if(!confirm(`Bạn chắc chắn muốn hủy đơn hàng ${orderCode}? Thao tác này không thể hoàn tác.`)) return;
+
+    apiFetch(`/user/orders/${orderId}/cancel`, { method: 'PUT' })
+        .then(() => {
+            showToast("Hủy đơn thành công!", "success");
+            loadMyOrders(); // Load lại bảng
+        })
+        .catch(err => showToast("Lỗi khi hủy đơn: " + err.message, "error"));
 }
