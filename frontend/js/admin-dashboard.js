@@ -1,3 +1,5 @@
+const BACKEND_URL = 'http://localhost:5195';
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Phân quyền: Cả Admin và Staff đều được vào
     if (!authManager.isLoggedIn()) { window.location.href = 'login.html'; return; }
@@ -7,8 +9,18 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'index.html'; return;
     }
 
-    const roleTitle = userInfo.role === 'Admin' ? "Quản trị viên" : "Nhân viên";
-    document.getElementById('display-admin-name').innerText = `Xin chào, ${roleTitle} (${userInfo.fullName})`;
+    const nameElem = document.getElementById('display-admin-name');
+    if (nameElem) {
+        const roleTitle = userInfo.role === 'Admin' ? "Quản trị viên" : "Nhân viên";
+        nameElem.innerText = `Xin chào, ${roleTitle} (${userInfo.fullName})`;
+    }
+    
+    // 2. LÀM SỐNG DROPDOWN LỌC THỜI GIAN
+    const timeFilterEl = document.getElementById('global-time-filter');
+    if (timeFilterEl) {
+        timeFilterEl.addEventListener('change', loadDashboardData);
+    }
+
     // Khởi tạo tải dữ liệu lần đầu
     loadDashboardData();
 });
@@ -19,16 +31,17 @@ const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'curr
 let revenueChartInstance = null;
 
 async function loadDashboardData() {
-    const timeFilter = document.getElementById('global-time-filter').value;
+    const filterEl = document.getElementById('global-time-filter');
+    const timeFilter = filterEl ? filterEl.value : 'week';
     
-    // Quy đổi timeFilter sang số ngày để gửi cho Chart API
-    let daysToFetch = 7; // Mặc định week
+    // Quy đổi sang số ngày để gửi cho Chart API
+    let daysToFetch = 7; 
     if (timeFilter === 'day') daysToFetch = 1;
     else if (timeFilter === 'month') daysToFetch = 30;
     else if (timeFilter === 'year') daysToFetch = 365;
 
     try {
-        // Gọi 3 API xịn xò của AdminDashboardController và AdminOrderController cùng lúc
+        // Gọi đồng thời các API cần thiết
         const [overviewData, topProductsData, chartData] = await Promise.all([
             apiFetch(`/admin/dashboard/overview?timeFilter=${timeFilter}`),
             apiFetch(`/admin/dashboard/top-products?limit=5`),
@@ -43,35 +56,44 @@ async function loadDashboardData() {
 
     } catch (error) {
         console.error("Lỗi tải dữ liệu Dashboard thực tế:", error);
-        showToast("Không thể kết nối đến máy chủ API.", "error");
+        showToast("Không thể tải dữ liệu thống kê.", "error");
     }
 }
 
-// 1. CẬP NHẬT 4 THẺ THỐNG KÊ (Dùng DashboardOverviewDto)
+// 1. CẬP NHẬT CÁC THẺ THỐNG KÊ (ĐÃ BỎ LƯỢT TRUY CẬP)
 function updateOverviewCards(overview) {
     if (!overview) return;
 
-    document.getElementById('stat-revenue').innerText = formatCurrency(overview.totalRevenue);
-    document.getElementById('stat-orders').innerText = overview.totalOrders;
-    document.getElementById('stat-users').innerText = overview.totalUsers;
+    // Sử dụng toán tử ?. và kiểm tra null để tránh lỗi "innerText of null"
+    const elRev = document.getElementById('stat-revenue');
+    const elOrd = document.getElementById('stat-orders');
+    const elUser = document.getElementById('stat-users');
+    const elProd = document.getElementById('stat-products');
+
+    if (elRev) elRev.innerText = formatCurrency(overview.totalRevenue || 0);
+    if (elOrd) elOrd.innerText = overview.totalOrders || 0;
+    if (elUser) elUser.innerText = overview.totalUsers || 0;
+    if (elProd) elProd.innerText = overview.totalProducts || 0;
     
-    // Visitors hiện đang set là 0 từ Backend, em có thể update logic sau
-    document.getElementById('stat-visitors').innerText = overview.totalVisitors;
-    const statProducts = document.getElementById('stat-products');
-    if(statProducts) statProducts.innerText = overview.totalProducts || 0;
+    // Lưu ý: Nếu trong HTML của em không còn stat-visitors thì code này sẽ không đụng vào nó nữa.
 }
 
-// 2. CẬP NHẬT CẢNH BÁO (Dùng DashboardOverviewDto)
+// 2. CẬP NHẬT CẢNH BÁO
 function processAlerts(overview) {
     if (!overview) return;
 
-    document.getElementById('alert-pending-orders').innerText = overview.pendingOrdersCount;
-    document.getElementById('alert-low-stock').innerText = overview.lowStockProductsCount;
+    const elPending = document.getElementById('alert-pending-orders');
+    const elStock = document.getElementById('alert-low-stock');
+
+    if (elPending) elPending.innerText = overview.pendingOrdersCount || 0;
+    if (elStock) elStock.innerText = overview.lowStockProductsCount || 0;
 }
 
-// 3. BẢNG XẾP HẠNG TOP SẢN PHẨM (Dùng TopProductDto)
+// 3. BẢNG XẾP HẠNG TOP SẢN PHẨM
 function renderTopProducts(topProducts) {
     const tbody = document.getElementById('top-products-body');
+    if (!tbody) return;
+
     tbody.innerHTML = '';
     
     if (!topProducts || topProducts.length === 0) {
@@ -83,14 +105,16 @@ function renderTopProducts(topProducts) {
         const stockClass = product.totalStock > 5 ? 'stock-ok' : 'stock-low';
         const stockText = product.totalStock > 5 ? 'Còn hàng' : 'Sắp hết';
         
-        // Đảm bảo không bị lỗi hiển thị ảnh nếu null
-        const imageUrl = product.thumbnail || 'image/placeholder.jpg';
+        let imageUrl = 'image/placeholder.jpg';
+        if (product.thumbnail) {
+            imageUrl = product.thumbnail.startsWith('http') ? product.thumbnail : BACKEND_URL + product.thumbnail;
+        }
 
         const tr = `
             <tr>
                 <td>
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <img src="${imageUrl}" style="width:45px; height:45px; object-fit:cover; border-radius:6px; border: 1px solid #eee;">
+                        <img src="${imageUrl}" onerror="this.src='image/placeholder.jpg'" style="width:45px; height:45px; object-fit:cover; border-radius:6px; border: 1px solid #eee;">
                         <strong style="color: var(--color-primary); font-size: 0.95rem;">${product.productName}</strong>
                     </div>
                 </td>
@@ -103,9 +127,12 @@ function renderTopProducts(topProducts) {
     });
 }
 
-// 4. VẼ BIỂU ĐỒ DOANH THU (Dùng RevenueStatisticDto)
+// 4. VẼ BIỂU ĐỒ DOANH THU
 function renderChart(chartData) {
-    const ctx = document.getElementById('revenueChart').getContext('2d');
+    const canvas = document.getElementById('revenueChart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
     if (revenueChartInstance) revenueChartInstance.destroy();
 
     const labels = []; 
@@ -113,30 +140,30 @@ function renderChart(chartData) {
     
     if (chartData && chartData.length > 0) {
         chartData.forEach(item => {
-            labels.push(item.date); // API của Quý trả về chuỗi "dd/MM/yyyy" đã format sẵn
+            labels.push(item.date); 
             dataArray.push(item.totalRevenue);
         });
     }
 
-    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
-    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--color-accent-light').trim();
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim() || '#003049';
+    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--color-accent-light').trim() || '#C1121F';
     
     revenueChartInstance = new Chart(ctx, {
-        type: 'line', // Đổi sang biểu đồ đường (line) cho thanh lịch và hiện đại hơn
+        type: 'line',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Doanh thu (VNĐ)',
                 data: dataArray,
                 borderColor: primaryColor,
-                backgroundColor: 'rgba(0, 48, 73, 0.1)', // Đổ màu nhạt dưới đường line
+                backgroundColor: 'rgba(0, 48, 73, 0.1)',
                 borderWidth: 3,
                 pointBackgroundColor: accentColor,
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
                 pointRadius: 5,
                 fill: true,
-                tension: 0.3 // Làm cong mềm mại các điểm nối
+                tension: 0.3 
             }]
         },
         options: {
@@ -170,73 +197,15 @@ function renderChart(chartData) {
     });
 }
 
-
-/* ==========================================================================
-   TÍNH NĂNG TÌM KIẾM ĐƠN HÀNG (TOPBAR)
-   ========================================================================== */
-   const searchInput = document.querySelector('.topbar-search input');
-   if (searchInput) {
-       searchInput.addEventListener('keypress', function (e) {
-           if (e.key === 'Enter') {
-               const keyword = this.value.trim();
-               if (keyword) {
-                   // Chuyển hướng sang trang Quản lý Đơn hàng kèm theo query tìm kiếm
-                   // (Sau này sang file admin-orders.js em sẽ viết code hứng cái biến search này)
-                   window.location.href = `admin-orders.html?search=${encodeURIComponent(keyword)}`;
-               }
-           }
-       });
-   }
-   
-   /* ==========================================================================
-      TÍNH NĂNG CHUÔNG THÔNG BÁO (REALTIME BẰNG POLLING)
-      ========================================================================== */
-   let currentPendingCount = 0; // Lưu trữ số đơn hàng đang chờ duyệt hiện tại
-   const bellBtn = document.querySelector('.notification-bell');
-   const notifyBadge = document.getElementById('new-order-badge');
-   
-   // Hàm kiểm tra đơn hàng mới chạy ngầm
-   async function pollForNewOrders() {
-       try {
-           // Chỉ lấy các đơn Pending (status = 0) để cho nhẹ Backend
-           const response = await apiFetch(`/admin/orders?status=0`);
-           const pendingOrders = Array.isArray(response) ? response : (response.items || []);
-           
-           const newPendingCount = pendingOrders.length;
-   
-           // Nếu số lượng đơn chờ duyệt tăng lên, nghĩa là vừa có khách đặt hàng thành công
-           if (newPendingCount > currentPendingCount && currentPendingCount !== 0) {
-               notifyBadge.style.display = 'block'; // Hiện chấm đỏ
-               showToast("🔔 Bạn vừa có đơn đặt hàng mới! Vui lòng kiểm tra.", "success");
-               
-               // Cập nhật luôn con số ở thẻ Cảnh báo bên dưới (nếu thẻ đó đang hiển thị)
-               const alertElem = document.getElementById('alert-pending-orders');
-               if (alertElem) alertElem.innerText = newPendingCount;
-           }
-   
-           currentPendingCount = newPendingCount; // Cập nhật lại mốc so sánh
-       } catch (error) {
-           console.warn("Lỗi khi kiểm tra thông báo ngầm:", error);
-       }
-   }
-   
-   // Bắt đầu quá trình hỏi dò (Polling) sau khi load xong trang
-   // Lần đầu tiên gọi sau 5 giây, sau đó lặp lại mỗi 30 giây
-   setTimeout(() => {
-       // Khởi tạo lấy mốc số lượng ban đầu (tránh việc vừa vào trang đã báo có đơn mới)
-       const alertElem = document.getElementById('alert-pending-orders');
-       if (alertElem) currentPendingCount = parseInt(alertElem.innerText) || 0;
-       
-       // Bật bộ lặp 30 giây
-       setInterval(pollForNewOrders, 30000);
-   }, 5000);
-   
-   // Xử lý sự kiện khi click vào chuông thông báo
-   if (bellBtn) {
-       bellBtn.addEventListener('click', () => {
-           // Ẩn chấm đỏ đi
-           notifyBadge.style.display = 'none';
-           // Chuyển hướng sang trang Đơn hàng, tự động lọc các đơn đang Chờ duyệt (status=0)
-           window.location.href = 'admin-orders.html?status=0';
-       });
-   }
+// TÌM KIẾM ĐƠN HÀNG NHANH
+const searchInput = document.querySelector('.topbar-search input');
+if (searchInput) {
+    searchInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            const keyword = this.value.trim();
+            if (keyword) {
+                window.location.href = `admin-orders.html?search=${encodeURIComponent(keyword)}`;
+            }
+        }
+    });
+}

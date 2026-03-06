@@ -150,14 +150,22 @@ async function saveAddress(event) {
     }
 }
 
-// Xóa một địa chỉ
-async function deleteAddress(id) {
-    if(!confirm("Bạn có chắc chắn muốn xóa địa chỉ này khỏi sổ không?")) return;
-    try {
-        await apiFetch(`/user/addresses/${id}`, { method: 'DELETE' });
-        showToast("Đã xóa địa chỉ", "success");
-        loadAddresses();
-    } catch (error) {}
+// Xóa một địa chỉ bằng Modal Xác Nhận
+function deleteAddress(id) {
+    showConfirmModal(
+        "Xóa Địa Chỉ", 
+        "Bạn có chắc chắn muốn xóa địa chỉ này khỏi sổ không?", 
+        "Xóa Địa Chỉ", 
+        async () => {
+            try {
+                await apiFetch(`/user/addresses/${id}`, { method: 'DELETE' });
+                showToast("Đã xóa địa chỉ", "success");
+                loadAddresses();
+            } catch (error) {
+                console.error("Lỗi khi xóa địa chỉ", error);
+            }
+        }
+    );
 }
 
 // ==========================================================================
@@ -175,7 +183,7 @@ async function loadMyOrders() {
     }
 }
 
-// 💥 HÀM MỚI: Render bảng đơn hàng
+// Render bảng đơn hàng
 function renderOrdersTable(orderList) {
     const tbody = document.getElementById('my-orders-tbody');
     tbody.innerHTML = '';
@@ -214,15 +222,14 @@ function renderOrdersTable(orderList) {
     });
 }
 
-// 💥 HÀM MỚI: Lọc trên giao diện
 function filterOrders(statusKeyword, btnElement) {
-    // Đổi màu nút
-    document.querySelectorAll('.order-status-tabs .btn').forEach(btn => {
-        btn.style.backgroundColor = 'transparent';
-        btn.style.color = 'var(--color-primary)';
+    // Xóa class 'active' ở tất cả các nút
+    document.querySelectorAll('.status-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
     });
-    btnElement.style.backgroundColor = 'var(--color-primary)';
-    btnElement.style.color = '#fff';
+    
+    // Thêm class 'active' (màu đỏ, có gạch chân) vào nút vừa bấm
+    btnElement.classList.add('active');
 
     // Lọc danh sách
     if (statusKeyword === null) {
@@ -234,44 +241,75 @@ function filterOrders(statusKeyword, btnElement) {
 }
 
 // ==========================================================================
-// LOGIC CHỌN TỈNH/THÀNH PHỐ THẬT Ở VIỆT NAM (DÙNG CHUNG CHO PROFILE VÀ CHECKOUT)
+// LOGIC CHỌN TỈNH/THÀNH PHỐ (NGUỒN GITHUB SIÊU ỔN ĐỊNH) - CHO PROFILE
 // ==========================================================================
 async function initRealLocations() {
     try {
-        // Sử dụng API miễn phí của Open API Việt Nam
-        const response = await fetch('https://provinces.open-api.vn/api/?depth=3');
+        const response = await fetch('https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json');
         locationData = await response.json();
         
+        // 👉 TRANG PROFILE DÙNG ID LÀ addr-province
         const provinceSelect = document.getElementById('addr-province');
+        if (!provinceSelect) return; // An toàn: Nếu không tìm thấy thẻ thì bỏ qua không làm gì cả
+
         provinceSelect.innerHTML = '<option value="" disabled selected>Chọn Tỉnh/Thành phố</option>';
         
-        locationData.forEach(p => provinceSelect.add(new Option(p.name, p.code)));
+        locationData.forEach(p => {
+            let opt = document.createElement('option');
+            opt.value = p.Id;
+            opt.text = p.Name;
+            provinceSelect.add(opt);
+        });
     } catch (error) {
-        console.error("Lỗi tải dữ liệu Tỉnh thành:", error);
+        console.error("Lỗi tải dữ liệu địa giới hành chính:", error);
     }
 }
 
-// Khi người dùng chọn Tỉnh/Thành -> Xổ ra danh sách Quận/Huyện tương ứng
-document.getElementById('addr-province').addEventListener('change', function() {
-    const province = locationData.find(p => p.code === parseInt(this.value));
-    const districtSelect = document.getElementById('addr-district');
-    
-    districtSelect.innerHTML = '<option value="" disabled selected>Chọn Quận/Huyện</option>';
-    document.getElementById('addr-ward').innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
-    
-    if (province) province.districts.forEach(d => districtSelect.add(new Option(d.name, d.code)));
-});
+// Khi người dùng chọn Tỉnh/Thành -> Xổ ra danh sách Quận/Huyện
+const addrProvinceElem = document.getElementById('addr-province');
+if (addrProvinceElem) {
+    addrProvinceElem.addEventListener('change', function() {
+        const provinceId = this.value;
+        const province = locationData.find(p => p.Id === provinceId);
+        
+        const districtSelect = document.getElementById('addr-district');
+        districtSelect.innerHTML = '<option value="" disabled selected>Chọn Quận/Huyện</option>';
+        document.getElementById('addr-ward').innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
+        
+        if (province && province.Districts) {
+            province.Districts.forEach(d => {
+                let opt = document.createElement('option');
+                opt.value = d.Id;
+                opt.text = d.Name;
+                districtSelect.add(opt);
+            });
+        }
+    });
+}
 
-// Khi người dùng chọn Quận/Huyện -> Xổ ra danh sách Phường/Xã tương ứng
-document.getElementById('addr-district').addEventListener('change', function() {
-    const province = locationData.find(p => p.code === parseInt(document.getElementById('addr-province').value));
-    const district = province.districts.find(d => d.code === parseInt(this.value));
-    const wardSelect = document.getElementById('addr-ward');
-    
-    wardSelect.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
-    
-    if (district) district.wards.forEach(w => wardSelect.add(new Option(w.name, w.code)));
-});
+// Khi người dùng chọn Quận/Huyện -> Xổ ra danh sách Phường/Xã
+const addrDistrictElem = document.getElementById('addr-district');
+if (addrDistrictElem) {
+    addrDistrictElem.addEventListener('change', function() {
+        const provinceId = document.getElementById('addr-province').value;
+        const districtId = this.value;
+        
+        const province = locationData.find(p => p.Id === provinceId);
+        const district = province?.Districts.find(d => d.Id === districtId);
+        
+        const wardSelect = document.getElementById('addr-ward');
+        wardSelect.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
+        
+        if (district && district.Wards) {
+            district.Wards.forEach(w => {
+                let opt = document.createElement('option');
+                opt.value = w.Id;
+                opt.text = w.Name;
+                wardSelect.add(opt);
+            });
+        }
+    });
+}
 
 // ==========================================================================
 // ĐĂNG XUẤT
@@ -280,13 +318,20 @@ function logout() {
     authManager.clear();
     window.location.href = 'login.html';
 }
+// Hủy đơn hàng bằng Modal Xác Nhận
 function cancelMyOrder(orderId, orderCode) {
-    if(!confirm(`Bạn chắc chắn muốn hủy đơn hàng ${orderCode}? Thao tác này không thể hoàn tác.`)) return;
-
-    apiFetch(`/user/orders/${orderId}/cancel`, { method: 'PUT' })
-        .then(() => {
-            showToast("Hủy đơn thành công!", "success");
-            loadMyOrders(); // Load lại bảng
-        })
-        .catch(err => showToast("Lỗi khi hủy đơn: " + err.message, "error"));
+    showConfirmModal(
+        "Hủy Đơn Hàng", 
+        `Bạn có chắc chắn muốn hủy đơn hàng <strong>${orderCode}</strong> không?<br><br><span style="color:var(--color-accent-dark); font-size: 0.85rem;">Lưu ý: Thao tác này không thể hoàn tác!</span>`, 
+        "Xác nhận Hủy", 
+        async () => {
+            try {
+                await apiFetch(`/user/orders/${orderId}/cancel`, { method: 'PUT' });
+                showToast("Hủy đơn thành công!", "success");
+                loadMyOrders(); // Load lại bảng
+            } catch (error) {
+                console.error("Lỗi khi hủy đơn", error);
+            }
+        }
+    );
 }

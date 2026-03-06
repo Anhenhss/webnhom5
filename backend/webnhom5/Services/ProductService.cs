@@ -100,6 +100,10 @@ namespace webnhom5.Services
                     IsActive = p.IsActive,
                     TotalStock = p.ProductVariants.Sum(v => v.Quantity ?? 0),
 
+                    SoldCount = _context.OrderDetails
+                        .Where(od => od.ProductVariant.ProductId == p.Id && od.Order.Status == 3)
+                        .Sum(od => (int?)od.Quantity) ?? 0,
+
                     Variants = p.ProductVariants.Select(v => new VariantResponseDto
                     {
                         ColorId = v.ColorId,
@@ -120,6 +124,13 @@ namespace webnhom5.Services
 
             if (product == null) return null;
 
+            // 💥 TÍNH TOÁN SỐ LƯỢNG ĐÃ BÁN (Chỉ tính đơn hàng đã giao thành công)
+            int soldQuantity = await _context.OrderDetails
+                .Include(od => od.Order)
+                .Include(od => od.ProductVariant)
+                .Where(od => od.ProductVariant.ProductId == id && od.Order.Status == 3)
+                .SumAsync(od => od.Quantity);
+
             return new ProductResponseDto
             {
                 Id = product.Id,
@@ -128,12 +139,13 @@ namespace webnhom5.Services
                 Price = product.Price,
                 Description = product.Description,
                 Thumbnail = product.Thumbnail,
-
-                // Đảm bảo chi tiết cũng có ID
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category.Name,
-
                 IsActive = product.IsActive,
+                
+                // 👉 Đưa số lượng bán vào thuộc tính TotalStock (Hoặc tạo thêm thuộc tính SoldCount trong Dto)
+                SoldCount = soldQuantity, 
+
                 ImageUrls = product.ProductImages.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList(),
                 Variants = product.ProductVariants.Select(v => new VariantResponseDto
                 {
@@ -472,21 +484,28 @@ namespace webnhom5.Services
             bool productExists = await _context.Products.AnyAsync(p => p.Id == dto.ProductId);
             if (!productExists) throw new Exception("Sản phẩm không tồn tại.");
 
-            // 💡 TÍNH NĂNG MỞ RỘNG TƯƠNG LAI: Kiểm tra xem user đã mua hàng chưa
-            // Hiện tại comment lại để dễ test UI. Khi nào làm xong module Đặt Hàng (Order)
-            /*
-            if (dto.OrderId <= 0) throw new Exception("Thiếu thông tin đơn hàng.");
-            bool hasBought = await _context.OrderDetails
-                .AnyAsync(od => od.OrderId == dto.OrderId && od.Order.UserId == userId && od.ProductVariant.ProductId == dto.ProductId);
-            if (!hasBought) throw new Exception("Bạn phải mua sản phẩm này mới được đánh giá!");
-            */
+            // 💥 2. KIỂM TRA ĐÃ MUA HÀNG HAY CHƯA (Logic xịn cho đồ án)
+            // Tìm xem người dùng này đã có Đơn hàng nào CHỨA sản phẩm này và đã HOÀN THÀNH (Status = 3) chưa?
+            var purchasedOrder = await _context.OrderDetails
+                .Include(od => od.Order)
+                .Include(od => od.ProductVariant)
+                .Where(od => od.Order.UserId == userId 
+                          && od.ProductVariant.ProductId == dto.ProductId 
+                          && od.Order.Status == 3) // Trạng thái 3 = Hoàn thành
+                .OrderByDescending(od => od.OrderId)
+                .FirstOrDefaultAsync();
 
-            // 2. Tạo đối tượng Review mới
+            if (purchasedOrder == null) 
+            {
+                throw new Exception("Bạn phải mua và nhận thành công sản phẩm này mới được đánh giá!");
+            }
+
+            // 3. Tạo đối tượng Review mới
             var review = new ProductReview
             {
                 ProductId = dto.ProductId,
                 UserId = userId,
-                // OrderId = dto.OrderId,
+                OrderId = purchasedOrder.OrderId, // 👉 Lấy OrderId thật từ đơn hàng vừa tìm được
                 Rating = dto.Rating,
                 Comment = dto.Comment,
                 CreatedAt = DateTime.Now
@@ -495,9 +514,8 @@ namespace webnhom5.Services
             _context.ProductReviews.Add(review);
             await _context.SaveChangesAsync();
 
-            // 3. Truy vấn User để lấy tên và trả về cho Frontend hiển thị ngay lập tức
+            // 4. Trả về cho Frontend
             var user = await _context.Users.FindAsync(userId);
-            
             return new ReviewResponseDto
             {
                 Id = review.Id,

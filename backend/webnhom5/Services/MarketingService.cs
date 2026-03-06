@@ -185,7 +185,7 @@ namespace webnhom5.Services
             // 1. Tìm mã Coupon trong DB
             Promotion? promo = null;
 
-            if (couponCode == "SALE") 
+            if (couponCode.ToUpper().StartsWith("SALE")) 
             {
                 promo = await _context.Promotions
                     .Include(p => p.PromotionConditions)

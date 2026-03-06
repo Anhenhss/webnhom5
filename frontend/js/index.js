@@ -88,7 +88,8 @@ async function loadParentCategories() {
             'https://i.pinimg.com/webp/1200x/f5/d3/a8/f5d3a86b0fc21f6369f5a3d7d9011c39.webp', 
             'https://i.pinimg.com/webp/1200x/ff/66/20/ff66208479e41d80905fce8caa99fe11.webp', 
             'https://i.pinimg.com/webp/1200x/bb/68/d4/bb68d4e4fb6754ea1ffbc9fb1d8c96aa.webp', 
-            'https://i.pinimg.com/736x/a2/9b/b3/a29bb3a78c377dd4a402dfbf8aeaff68.jpg'
+            'https://i.pinimg.com/736x/a2/9b/b3/a29bb3a78c377dd4a402dfbf8aeaff68.jpg',
+            'https://i.pinimg.com/736x/20/8d/f7/208df7dfce1ae0eae2007d605ddb0404.jpg'
         ];
 
         // Chỉ lấy các danh mục gốc (không có con hoặc là tầng cao nhất)

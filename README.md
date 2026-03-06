@@ -24,3 +24,14 @@ Lưu ý: Lúc git clone về là webnhom5 sẽ bao gồm các mục backend, fon
 const BASE_URL = 'https://localhost:5195/api'; 
 - Muốn xem web thì nên Open with Live Server hoặc theo đường link cổng ví dụ https://localhost:5500/index.html  
 lưu ý dotnet run phần backend thì fontend mới chạy
+
+
+1. Xem file appsettings.json Server = ... đúng Server của máy mình chưa
+2. Mở file FashionEcommerecDB.sql chạy 4 câu lệnh cuối
+EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'
+EXEC sp_MSforeachtable 'DELETE FROM ?'
+EXEC sp_MSforeachtable 'ALTER TABLE ? CHECK CONSTRAINT ALL'
+
+EXEC sp_MSforeachtable 'DBCC CHECKIDENT (''?'', RESEED, 0)'
+3. Vào \wwwroot\images\products xóa hết ảnh trong đó
+4. Chạy donet run

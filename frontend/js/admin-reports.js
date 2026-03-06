@@ -56,40 +56,137 @@ function renderReportTable(data) {
 }
 
 /* ==========================================================================
-   LOGIC XUẤT EXCEL (Times New Roman, Cỡ 13)
+   LOGIC XUẤT EXCEL CHUYÊN NGHIỆP (DÙNG EXCELJS)
    ========================================================================== */
-function exportToExcel() {
-    if (currentReportData.length === 0) {
+   async function exportToExcel() {
+    if (!currentReportData || currentReportData.length === 0) {
         showToast("Không có dữ liệu để xuất!", "warning");
         return;
     }
 
-    // Tạo mảng dữ liệu cho Excel
-    const excelData = [
-        ["BÁO CÁO DOANH THU TỔNG HỢP - WEBNHOM5"], // Tiêu đề lớn
-        ["Ngày xuất:", new Date().toLocaleString()],
-        [], // Dòng trống
-        ["Thời gian", "Số đơn hàng", "Doanh thu (VNĐ)", "Trung bình/Đơn"] // Header bảng
+    // 1. Lấy các thông số trên màn hình
+    const reportPeriod = document.getElementById('report-period').options[document.getElementById('report-period').selectedIndex].text;
+    const totalRevStr = document.getElementById('txt-total-revenue').innerText;
+    const totalOrdStr = document.getElementById('txt-total-orders').innerText;
+    
+    // Chuyển chuỗi tiền tệ "460.000₫" về số nguyên 460000 để Excel hiểu là Number
+    const totalRev = parseInt(totalRevStr.replace(/\D/g, '')) || 0;
+    const totalOrd = parseInt(totalOrdStr) || 0;
+    const adminName = JSON.parse(localStorage.getItem('userInfo') || '{}').fullName || 'Quản trị viên';
+
+    // 2. Khởi tạo File Excel
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Bao_Cao_Doanh_Thu');
+
+    // 3. Setup chiều rộng các cột (Canh lề tự động)
+    sheet.columns = [
+        { width: 20 },   // Cột A: STT
+        { width: 20 },  // Cột B: Ngày tháng
+        { width: 15 },  // Cột C: Số đơn
+        { width: 25 },  // Cột D: Doanh thu
+        { width: 25 }   // Cột E: Trung bình/Đơn
     ];
 
-    currentReportData.forEach(item => {
-        const avg = item.totalOrders > 0 ? (item.totalRevenue / item.totalOrders) : 0;
-        excelData.push([item.date, item.totalOrders, item.totalRevenue, avg]);
+    // Cài đặt Font chữ mặc định cho toàn bộ sheet là Times New Roman
+    sheet.eachRow((row) => { row.font = { name: 'Times New Roman', size: 12 }; });
+
+    // 4. TRANG TRÍ TIÊU ĐỀ BÁO CÁO (Gộp ô từ cột A đến E)
+    sheet.mergeCells('A1:E1');
+    const title1 = sheet.getCell('A1');
+    title1.value = 'CÔNG TY THỜI TRANG WEBNHOM5';
+    title1.font = { name: 'Times New Roman', size: 14, bold: true, color: { arg: '003049' } };
+    title1.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    sheet.mergeCells('A2:E2');
+    const title2 = sheet.getCell('A2');
+    title2.value = 'BÁO CÁO DOANH THU TỔNG HỢP';
+    title2.font = { name: 'Times New Roman', size: 16, bold: true };
+    title2.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // 5. THÊM THÔNG TIN META (Không viền)
+    sheet.getCell('A4').value = 'Thời gian báo cáo:';
+    sheet.getCell('A4').font = { bold: true };
+    sheet.getCell('B4').value = reportPeriod;
+
+    sheet.getCell('A5').value = 'Ngày xuất báo cáo:';
+    sheet.getCell('A5').font = { bold: true };
+    sheet.getCell('B5').value = new Date().toLocaleString('vi-VN');
+
+    sheet.getCell('A6').value = 'Người lập bảng:';
+    sheet.getCell('A6').font = { bold: true };
+    sheet.getCell('B6').value = adminName;
+
+    // Khối Tổng quan
+    sheet.getCell('A8').value = 'TỔNG SỐ ĐƠN:';
+    sheet.getCell('A8').font = { bold: true };
+    sheet.getCell('B8').value = totalOrd;
+    sheet.getCell('B8').alignment = { horizontal: 'left' };
+
+    sheet.getCell('A9').value = 'TỔNG DOANH THU:';
+    sheet.getCell('A9').font = { bold: true };
+    sheet.getCell('B9').value = totalRev;
+    sheet.getCell('B9').numFmt = '#,##0 "VNĐ"'; // Format tiền tệ chuẩn của Excel
+    sheet.getCell('B9').font = { bold: true, color: { arg: 'C1121F' } }; // Chữ màu đỏ
+    sheet.getCell('B9').alignment = { horizontal: 'left' };
+
+    // 6. THIẾT KẾ HEADER CỦA BẢNG DỮ LIỆU CHÍNH (Có khung viền, nền xám)
+    const headerRow = sheet.getRow(11);
+    headerRow.values = ['STT', 'Ngày / Tháng', 'Số đơn hàng', 'Doanh thu (VNĐ)', 'Trung bình/Đơn (VNĐ)'];
+    headerRow.font = { bold: true, name: 'Times New Roman', size: 12 };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    
+    // Định nghĩa Style kẻ khung viền (Border)
+    const thinBorder = {
+        top: { style: 'thin' }, left: { style: 'thin' },
+        bottom: { style: 'thin' }, right: { style: 'thin' }
+    };
+
+    headerRow.eachCell((cell) => {
+        cell.border = thinBorder;
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { arg: 'EAEAEA' } }; // Tô nền xám nhạt
     });
 
-    // Tạo Workbook
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(excelData);
+    // 7. ĐỔ DỮ LIỆU VÀ KẺ KHUNG CHO TỪNG DÒNG
+    currentReportData.forEach((item, index) => {
+        const avg = item.totalOrders > 0 ? (item.totalRevenue / item.totalOrders) : 0;
+        
+        // Thêm data vào bảng
+        const row = sheet.addRow([
+            index + 1,
+            item.date,
+            item.totalOrders,
+            item.totalRevenue, // Số thực để Excel tự tính toán được
+            Math.round(avg)
+        ]);
 
-    // Lưu ý: Thư viện XLSX bản community không hỗ trợ trực tiếp Style font chữ (cần bản Pro)
-    // Để có Font Times New Roman 13, thầy sẽ sử dụng thuộc tính XML cơ bản nếu có thể 
-    // hoặc hướng dẫn trình bày: Xuất file xong, chỉ cần Ctrl+A chọn Times New Roman 13 là cực đẹp.
-    
-    XLSX.utils.book_append_sheet(wb, ws, "BaoCaoTaiChinh");
-    
-    // Xuất file
-    const fileName = `Bao_Cao_Tai_Chinh_WebNhom5_${new Date().getTime()}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    
-    showToast("Đã tải xuống file báo cáo Excel!", "success");
+        // Chỉnh alignment và format
+        row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(2).alignment = { horizontal: 'center' };
+        row.getCell(3).alignment = { horizontal: 'center' };
+        row.getCell(4).numFmt = '#,##0'; // Format hàng nghìn có dấu phẩy
+        row.getCell(5).numFmt = '#,##0';
+
+        // Áp dụng Border cho tất cả các ô trong dòng này
+        row.eachCell((cell) => { cell.border = thinBorder; cell.font = { name: 'Times New Roman', size: 12 }; });
+    });
+
+    // 8. TẠO FILE VÀ TỰ ĐỘNG TẢI XUỐNG
+    try {
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        link.download = `BaoCaoDoanhThu_WebNhom5_${dateStr}.xlsx`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast("Xuất Excel thành công!", "success");
+    } catch (err) {
+        console.error("Lỗi khi xuất Excel: ", err);
+        showToast("Có lỗi xảy ra khi xuất file.", "error");
+    }
 }

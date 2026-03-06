@@ -350,14 +350,14 @@ function renderUserMenu() {
 
         // Đổ HTML menu xổ xuống vào Header (Biến icon rỗng thành icon tô đậm ph-fill)
         container.innerHTML = `
-            <a href="profile.html" class="icon-link"><i class="ph-fill ph-user" style="color: var(--color-accent-light)"></i></a>
+            <a href="#" class="icon-link"><i class="ph-fill ph-user" style="color: var(--color-accent-light)"></i></a>
             <div class="user-menu-dropdown">
                 <div class="user-name-display">Xin chào, ${userName}</div>
                 ${adminLink}
                 <a href="profile.html?tab=orders"><i class="ph ph-receipt"></i> Đơn mua của tôi</a>
                 
                 <a href="profile.html"><i class="ph ph-user-circle"></i> Hồ sơ tài khoản</a>
-                <button class="btn-logout" onclick="handleGlobalLogout()">
+                <button class="btn-logout" onclick="logout()">
                     <i class="ph ph-sign-out"></i> Đăng xuất
                 </button>
             </div>
@@ -368,49 +368,29 @@ function renderUserMenu() {
     }
 }
 
-// Hàm Xử lý Đăng xuất toàn cục
-function handleGlobalLogout() {
-    // 1. Xóa Token
-    authManager.clear();
-    // 2. Xóa thông tin User
-    localStorage.removeItem('userInfo');
-    
-    // 3. (Tùy chọn) Xóa giỏ hàng nếu muốn: localStorage.removeItem('webnhom5_cart');
 
-    // 4. Báo thành công
-    showToast("Đã đăng xuất thành công!", "success");
-
-    // 5. Đá văng về trang chủ sau 1 giây
-    setTimeout(() => {
-        window.location.href = 'index.html';
-    }, 1000);
-}
 /* ==========================================================================
-   TÍNH NĂNG ADMIN: CHUÔNG THÔNG BÁO & ĐĂNG XUẤT (DÙNG CHUNG MỌI TRANG)
+   TÍNH NĂNG ADMIN: CHUÔNG THÔNG BÁO & ĐĂNG XUẤT (DÙNG CHUNG CÁC TRANG ADMIN)
    ========================================================================== */
-   document.addEventListener('DOMContentLoaded', () => {
+// 👉 Đưa biến này vào object window để tránh lỗi "already been declared"
+window.currentPendingCount = -1; 
+
+document.addEventListener('DOMContentLoaded', () => {
     initAdminNotificationBell();
 });
-
-let currentPendingCount = -1; // Khởi tạo -1 để biết đây là lần load đầu tiên
 
 function initAdminNotificationBell() {
     const bellBtn = document.querySelector('.notification-bell');
     const notifyBadge = document.getElementById('new-order-badge');
 
-    // Nếu không tìm thấy chuông (nghĩa là đang ở trang ngoài của khách hàng) thì dừng lại ngay
+    // NẾU LÀ TRANG KHÁCH HÀNG (Không có cái chuông) -> Tự động bỏ qua, không chạy code lỗi
     if (!bellBtn || !notifyBadge) return;
 
-    // 1. Gọi ngay 1 lần khi vừa vào trang để kiểm tra
     pollForNewOrders();
+    setInterval(pollForNewOrders, 30000); // 30s check 1 lần
 
-    // 2. Cài đặt vòng lặp: Cứ mỗi 30 giây sẽ âm thầm gọi xuống C# hỏi xem có đơn mới không
-    setInterval(pollForNewOrders, 30000); 
-
-    // 3. Sự kiện bấm vào cái chuông
     bellBtn.addEventListener('click', () => {
-        notifyBadge.style.display = 'none'; // Tắt chấm đỏ
-        // Nhảy sang trang quản lý đơn hàng và tự động lọc đơn Chờ xử lý (status=0)
+        notifyBadge.style.display = 'none'; 
         window.location.href = 'admin-orders.html?status=0';
     });
 }
@@ -420,24 +400,26 @@ async function pollForNewOrders() {
     if (!notifyBadge) return;
 
     try {
-        // Gọi API lấy danh sách đơn hàng (Giả định em có API này trong AdminOrderController)
-        // Lọc lấy Status = 0 (Đang chờ duyệt)
         const response = await apiFetch(`/admin/orders?status=0`).catch(() => null);
         if (!response) return;
 
         const pendingOrders = Array.isArray(response) ? response : (response.items || []);
         const newPendingCount = pendingOrders.length;
 
-        // Nếu số lượng đơn chờ duyệt mới > số lượng cũ (Và không phải là lần load đầu tiên)
-        if (currentPendingCount !== -1 && newPendingCount > currentPendingCount) {
-            notifyBadge.style.display = 'block'; // Bật chấm đỏ lên
+        if (window.currentPendingCount !== -1 && newPendingCount > window.currentPendingCount) {
+            notifyBadge.style.display = 'block'; // 💥 BẬT CHẤM ĐỎ TRÊN CHUÔNG
+            notifyBadge.innerText = newPendingCount; // Hiện số lượng đơn mới
             showToast("🔔 Bạn vừa có đơn đặt hàng mới! Vui lòng kiểm tra.", "success");
+        } else if (newPendingCount > 0) {
+            notifyBadge.style.display = 'block';
+            notifyBadge.innerText = newPendingCount;
+        } else {
+            notifyBadge.style.display = 'none';
         }
 
-        // Lưu lại mốc số lượng mới
-        currentPendingCount = newPendingCount;
+        window.currentPendingCount = newPendingCount;
 
-        // (Tùy chọn) Nếu đang đứng ở trang Admin Dashboard, cập nhật luôn số trên thẻ Cảnh báo
+        // Cập nhật số ở Dashboard nếu đang đứng ở trang Dashboard
         const alertElem = document.getElementById('alert-pending-orders');
         if (alertElem) alertElem.innerText = newPendingCount;
 
@@ -446,87 +428,10 @@ async function pollForNewOrders() {
     }
 }
 
-// XỬ LÝ ĐĂNG XUẤT CHO NÚT Ở TOPBAR ADMIN
+// XỬ LÝ ĐĂNG XUẤT TOPBAR ADMIN
 function logout() {
-    // Gọi hàm clear có sẵn trong authManager
     authManager.clear();
     localStorage.removeItem('userInfo');
-    
     showToast("Đã đăng xuất!", "success");
-    
-    // Đá văng về trang đăng nhập
     setTimeout(() => { window.location.href = 'login.html'; }, 1000);
-}
-// ==========================================================================
-// HỘP THOẠI XÁC NHẬN DÙNG CHUNG (GLOBAL CONFIRM MODAL)
-// ==========================================================================
-function showConfirmModal(title, message, confirmText, onConfirmCallback) {
-    let modal = document.getElementById('global-confirm-modal');
-    
-    // Nếu chưa có Modal trong HTML thì JS tự động tạo ra
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.id = 'global-confirm-modal';
-        modal.style.display = 'none';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width: 400px; text-align: center; padding: 40px 30px; z-index: 10000;">
-                <div style="font-size: 3.5rem; color: var(--color-accent-dark); margin-bottom: 15px;">
-                    <i class="ph-fill ph-warning-circle"></i>
-                </div>
-                <h2 id="global-confirm-title" style="margin-bottom: 10px; color: var(--color-primary); font-size: 1.5rem;"></h2>
-                <p id="global-confirm-message" style="color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; font-size: 0.95rem;"></p>
-                <div style="display: flex; gap: 15px; justify-content: center;">
-                    <button class="btn btn-outline" onclick="closeConfirmModal()">Hủy bỏ</button>
-                    <button class="btn btn-primary" id="btn-global-confirm" style="background-color: var(--color-accent-dark);"></button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    // Đổ nội dung vào Modal
-    document.getElementById('global-confirm-title').innerText = title;
-    document.getElementById('global-confirm-message').innerHTML = message;
-    
-    const confirmBtn = document.getElementById('btn-global-confirm');
-    confirmBtn.innerText = confirmText || "Đồng ý";
-    
-    // Xóa sự kiện click cũ (tránh bị gọi 2 lần) và gài sự kiện mới
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-    
-    newConfirmBtn.addEventListener('click', async () => {
-        newConfirmBtn.disabled = true;
-        newConfirmBtn.innerText = "Đang xử lý...";
-        await onConfirmCallback(); // Chạy hàm thực thi (Xóa)
-        closeConfirmModal();
-    });
-
-    modal.style.display = 'flex';
-}
-
-function closeConfirmModal() {
-    const modal = document.getElementById('global-confirm-modal');
-    if (modal) modal.style.display = 'none';
-}
-// ==========================================================================
-// HÀM HIỂN THỊ THÔNG BÁO (TOAST) - ĐẶT TRÊN CÙNG ĐỂ DÙNG CHUNG TOÀN HỆ THỐNG
-// ==========================================================================
-function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    if (!container) return; 
-
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${message}</span>`;
-    
-    container.appendChild(toast);
-    
-    // Tự động xóa thông báo sau 3 giây
-    setTimeout(() => { 
-        if (toast.parentNode) {
-            toast.remove(); 
-        }
-    }, 3000);
 }

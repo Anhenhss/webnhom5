@@ -43,10 +43,18 @@
             </div>
 
             <div id="orders-tab" class="tab-pane" style="display: none;">
-                <div class="page-header-flex">
+                <div class="page-header-flex" style="margin-bottom: 16px; border-bottom: none;">
                     <h2>Lịch sử đơn hàng của tôi</h2>
                 </div>
                 
+                <div class="order-status-tabs">
+                    <button class="status-tab-btn active" onclick="filterOrders(null, this)">Tất cả</button>
+                    <button class="status-tab-btn" onclick="filterOrders('Chờ xác nhận', this)">Chờ xác nhận</button>
+                    <button class="status-tab-btn" onclick="filterOrders('Đã xác nhận', this)">Đã xác nhận</button>
+                    <button class="status-tab-btn" onclick="filterOrders('Đang giao', this)">Đang giao</button>
+                    <button class="status-tab-btn" onclick="filterOrders('Hoàn thành', this)">Hoàn thành</button>
+                    <button class="status-tab-btn" onclick="filterOrders('Đã hủy', this)">Đã hủy</button>
+                </div>
                 <div class="table-wrapper">
                     <table class="profile-table" style="width: 100%;">
                         <thead>
@@ -55,10 +63,10 @@
                                 <th>Ngày đặt</th>
                                 <th>Tổng tiền</th>
                                 <th>Trạng thái</th>
-                            </tr>
+                                <th>Thao tác</th> </tr>
                         </thead>
                         <tbody id="my-orders-tbody">
-                            <tr><td colspan="4" class="text-center text-muted" style="padding: 30px;">Đang tải dữ liệu...</td></tr>
+                            <tr><td colspan="5" class="text-center text-muted" style="padding: 30px;">Đang tải dữ liệu...</td></tr>
                         </tbody>
                     </table>
                 </div>

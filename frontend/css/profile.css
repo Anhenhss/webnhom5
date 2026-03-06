@@ -194,3 +194,43 @@
     0% { opacity: 0; transform: scale(0.9) translateY(20px); }
     100% { opacity: 1; transform: scale(1) translateY(0); }
 }
+/* ==========================================================================
+   ORDER STATUS TABS (BỘ LỌC ĐƠN HÀNG)
+   ========================================================================== */
+   .order-status-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #EAEAEA;
+    overflow-x: auto; /* Cho phép cuộn ngang nếu màn hình nhỏ */
+    scrollbar-width: none; /* Ẩn thanh cuộn trên Firefox */
+}
+.order-status-tabs::-webkit-scrollbar { display: none; } /* Ẩn thanh cuộn trên Chrome/Safari */
+
+.status-tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+}
+
+.status-tab-btn:hover {
+    color: var(--color-primary);
+}
+
+.status-tab-btn.active {
+    color: var(--color-accent-light);
+    border-bottom: 3px solid var(--color-accent-light);
+}
+
+/* Trang trí cho Bảng đơn hàng đẹp hơn */
+.profile-table { border-collapse: collapse; }
+.profile-table th { text-align: left; padding: 12px 16px; background: #F8FBFC; color: var(--text-muted); border-bottom: 2px solid #EAEAEA;}
+.profile-table td { padding: 16px; border-bottom: 1px solid #EAEAEA; vertical-align: middle; }
+.profile-table tbody tr:hover { background-color: #FAFAFA; }

@@ -10,8 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const roleTitle = userInfo.role === 'Admin' ? "Quản trị viên" : "Nhân viên";
     document.getElementById('display-admin-name').innerText = `${roleTitle} (${userInfo.fullName})`;
 
-    
-    // Kiểm tra xem có parameter truyền từ trang Dashboard sang không (VD: ?search=ORD.. hoặc ?status=0)
+    // Nhận Query Parameter từ URL (Nếu có)
     const urlParams = new URLSearchParams(window.location.search);
     const initialStatus = urlParams.get('status');
     const initialSearch = urlParams.get('search');
@@ -19,35 +18,44 @@ document.addEventListener('DOMContentLoaded', () => {
     if (initialStatus) document.getElementById('filter-status').value = initialStatus;
     if (initialSearch) document.getElementById('order-search-input').value = initialSearch;
 
+    // Load dữ liệu lần đầu
     loadOrders();
 
-    // Lắng nghe sự kiện ô tìm kiếm
-    document.getElementById('order-search-input').addEventListener('input', function() {
-        filterTableBySearch(this.value);
-    });
+    // 💥 RÀNG BUỘC CÁC SỰ KIỆN TÌM KIẾM VÀ LỌC 💥
+    // 1. Lọc trực tiếp khi gõ chữ vào ô Search
+    const searchInput = document.getElementById('order-search-input');
+    if(searchInput) {
+        searchInput.addEventListener('input', function() {
+            filterTableBySearch(this.value);
+        });
+    }
+
+    // 2. Tự động gọi API lọc khi đổi Trạng thái hoặc Đổi ngày (Không cần bấm nút)
+    document.getElementById('filter-status').addEventListener('change', loadOrders);
+    document.getElementById('filter-from').addEventListener('change', loadOrders);
+    document.getElementById('filter-to').addEventListener('change', loadOrders);
 });
 
 const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
-// Biến lưu trữ toàn bộ đơn hàng trên Client để search cho mượt
 let allOrdersData = [];
 
-// 1. LOAD DANH SÁCH ĐƠN HÀNG
+// Hàm load API
 async function loadOrders() {
     const status = document.getElementById('filter-status').value;
     const from = document.getElementById('filter-from').value;
     const to = document.getElementById('filter-to').value;
 
     let query = '?';
-    if (status) query += `status=${status}&`;
-    if (from) query += `from=${from}&`;
-    if (to) query += `to=${to}&`;
+    if (status !== "") query += `status=${status}&`;
+    if (from) query += `fromDate=${from}&`;
+    if (to) query += `toDate=${to}&`;
 
     try {
         const response = await apiFetch(`/admin/orders${query}`);
         allOrdersData = Array.isArray(response) ? response : (response.items || []);
         
-        // Nếu có chữ trong ô tìm kiếm, lọc luôn
+        // Sau khi load xong, nếu có chữ trong ô search thì lọc tiếp
         const searchKw = document.getElementById('order-search-input').value;
         if(searchKw) {
             filterTableBySearch(searchKw);
@@ -59,26 +67,28 @@ async function loadOrders() {
     }
 }
 
-// Lọc bằng Javascript để mượt mà không cần gọi API nhiều lần
+// Lọc Data trên Client bằng JS (Chống gọi API quá nhiều lần gây nghẽn)
 function filterTableBySearch(keyword) {
     if(!keyword) {
         renderOrdersTable(allOrdersData);
         return;
     }
-    const kw = keyword.toLowerCase();
+    const kw = keyword.toLowerCase().trim();
+    // Tìm theo Mã đơn (ORD-...) hoặc Tên khách hàng
     const filtered = allOrdersData.filter(o => 
-        o.orderCode.toLowerCase().includes(kw) || 
-        o.shippingName.toLowerCase().includes(kw)
+        (o.orderCode && o.orderCode.toLowerCase().includes(kw)) || 
+        (o.shippingName && o.shippingName.toLowerCase().includes(kw))
     );
     renderOrdersTable(filtered);
 }
 
+// Hàm Reset (Nút mũi tên xoay vòng)
 function resetFilters() {
     document.getElementById('filter-status').value = "";
     document.getElementById('filter-from').value = "";
     document.getElementById('filter-to').value = "";
     document.getElementById('order-search-input').value = "";
-    loadOrders();
+    loadOrders(); // Tải lại toàn bộ
 }
 
 function renderOrdersTable(orders) {
@@ -161,10 +171,14 @@ async function viewOrderDetail(orderId) {
         itemsDiv.innerHTML = '';
         if (order.orderDetails && order.orderDetails.length > 0) {
             order.orderDetails.forEach(item => {
-                const thumb = item.thumbnail || 'image/placeholder.jpg';
+                let thumbUrl = 'image/placeholder.jpg';
+                if (item.thumbnail) {
+                    thumbUrl = item.thumbnail.startsWith('http') ? item.thumbnail : BACKEND_URL + item.thumbnail;
+                }
+
                 itemsDiv.innerHTML += `
                     <div class="snapshot-item">
-                        <img src="${thumb}" alt="product">
+                        <img src="${thumbUrl}" alt="product">
                         <div class="snapshot-details">
                             <p><strong>${item.productName}</strong></p>
                             <p style="color: var(--text-muted); font-size: 0.8rem;">SKU: ${item.sku}</p>

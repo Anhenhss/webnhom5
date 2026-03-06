@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Báo cáo Tài chính | WebNhom5</title>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="css/admin-reports.css">
@@ -32,13 +32,18 @@
             <header class="admin-topbar">
                 <div class="topbar-search">
                     <i class="ph ph-magnifying-glass"></i>
-                    <input type="text" placeholder="Tìm kiếm báo cáo...">
+                    <input type="text" id="product-search" placeholder="Tìm tên sản phẩm, mã SKU...">
                 </div>
                 <div class="topbar-profile">
+                    <button class="icon-btn notification-bell">
+                        <i class="ph-fill ph-bell"></i>
+                        <span class="notify-badge" id="new-order-badge" style="display: none;"></span>
+                    </button>
                     <div class="profile-info">
                         <i class="ph ph-user"></i></a>
-                        <span class="admin-name" id="display-admin-name">Admin</span>
+                        <span class="admin-name" id="display-admin-name">Đang tải...</span>
                     </div>
+                    <button class="btn-logout" onclick="logout()" title="Đăng xuất"><i class="ph ph-sign-out"></i></button>
                 </div>
             </header>
 
