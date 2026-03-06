@@ -11,7 +11,8 @@ let subtotal = 0;
 let shippingFee = 0;
 let itemCount = 0;
 let locationData = []; // Lưu trữ dữ liệu 63 tỉnh thành
-
+let discountAmount = 0;
+let appliedCouponCode = "";
 // 1. Tải dữ liệu giỏ hàng
 async function loadCheckoutSummary() {
     try {
@@ -121,7 +122,8 @@ function calculateShipping(provinceName) {
 }
 
 function updateGrandTotal() {
-    const total = subtotal + shippingFee;
+    let total = subtotal + shippingFee - discountAmount;
+    if (total < 0) total = 0; // Không để tổng tiền bị âm
     document.getElementById('total-amount').innerText = formatCurrency(total);
 }
 
@@ -133,7 +135,6 @@ async function submitOrder() {
         return;
     }
 
-    // Lấy tên thật (text) thay vì value (code)
     const pSelect = document.getElementById('province');
     const dSelect = document.getElementById('district');
     const wSelect = document.getElementById('ward');
@@ -150,7 +151,6 @@ async function submitOrder() {
     const ward = wSelect.options[wSelect.selectedIndex].text;
     const street = document.getElementById('street').value.trim();
     
-    // Gộp địa chỉ gửi API Backend (CheckoutDto)
     const fullAddress = `${street}, ${ward}, ${district}, ${province}`;
     const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
 
@@ -158,23 +158,52 @@ async function submitOrder() {
         ShippingName: name,
         ShippingPhone: phone,
         ShippingAddress: fullAddress,
-        PaymentMethod: paymentMethod
+        PaymentMethod: paymentMethod,
+        CouponCode: appliedCouponCode // Gửi mã giảm giá lên C# nếu có
     };
 
     try {
-        // Nút đặt hàng sẽ gọi POST /cart/checkout
+        const btnCheckout = document.querySelector('.btn-checkout');
+        btnCheckout.disabled = true;
+        btnCheckout.innerText = "Đang xử lý...";
+
         const response = await apiFetch('/cart/checkout', {
             method: 'POST',
             body: JSON.stringify(payload)
         });
 
-        showToast("Đặt hàng thành công! Đang chuyển hướng...", "success");
-        setTimeout(() => {
-            // Giả sử có trang success.html hoặc chuyển sang lịch sử mua hàng
-            window.location.href = `success.html?code=${response.orderCode}`; 
-        }, 2000);
+        // =========================================================
+        // LOGIC ĐIỀU HƯỚNG THANH TOÁN (COD, VNPAY, MOMO)
+        // =========================================================
+        if (paymentMethod === 'VNPAY') {
+            showToast("Đang chuyển hướng sang cổng thanh toán VNPAY...", "success");
+            
+            // 👉 NẾU C# CỦA EM TRẢ VỀ LINK THẬT:
+            // if (response.paymentUrl) { window.location.href = response.paymentUrl; return; }
+
+            // 👉 MÔ PHỎNG HIỆU ỨNG CHO ĐỒ ÁN:
+            setTimeout(() => {
+                alert(`[MÔ PHỎNG API] Sẽ chuyển hướng đến VNPAY.\nMã ĐH: ${response.orderCode}\nSố tiền: ${formatCurrency(subtotal + shippingFee - discountAmount)}`);
+                window.location.href = `success.html?code=${response.orderCode}`;
+            }, 1500);
+        } 
+        else if (paymentMethod === 'MOMO') {
+            showToast("Đang mở cổng thanh toán MoMo...", "success");
+            setTimeout(() => {
+                alert(`[MÔ PHỎNG API] Sẽ mở mã QR MoMo cho đơn hàng ${response.orderCode}.`);
+                window.location.href = `success.html?code=${response.orderCode}`;
+            }, 1500);
+        } 
+        else {
+            // Thanh toán COD (Tiền mặt)
+            showToast("Đặt hàng thành công! Đang chuyển hướng...", "success");
+            setTimeout(() => {
+                window.location.href = `success.html?code=${response.orderCode}`; 
+            }, 1500);
+        }
 
     } catch (error) {
-        // Lỗi tự động bắt bởi apiFetch
+        document.querySelector('.btn-checkout').disabled = false;
+        document.querySelector('.btn-checkout').innerText = "Đặt hàng ngay";
     }
 }

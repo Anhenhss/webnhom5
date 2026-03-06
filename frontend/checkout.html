@@ -110,6 +110,14 @@
             <div class="cart-summary-section">
                 <div class="summary-box">
                     <h3>Tổng đơn hàng</h3>
+                    
+                    <div class="voucher-box" style="margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="voucher-code" class="form-control" placeholder="Nhập mã giảm giá..." style="text-transform: uppercase; padding: 10px;">
+                            <button type="button" class="btn btn-outline" onclick="applyCoupon()" style="padding: 10px 20px; white-space: nowrap;">Áp dụng</button>
+                        </div>
+                        <div id="voucher-message" style="font-size: 0.85rem; margin-top: 8px;"></div>
+                    </div>
                     <div class="summary-row">
                         <span>Tạm tính (<span id="item-count">0</span> sp):</span>
                         <span id="subtotal-amount">0 ₫</span>
@@ -117,6 +125,11 @@
                     <div class="summary-row" style="color: var(--color-primary);">
                         <span>Phí vận chuyển:</span>
                         <span id="shipping-fee-amount">Chưa tính</span>
+                    </div>
+                    
+                    <div class="summary-row" id="discount-row" style="display: none; color: #2e7d32; font-weight: 600;">
+                        <span>Giảm giá voucher:</span>
+                        <span id="discount-amount">-0 ₫</span>
                     </div>
                     <hr class="summary-divider">
                     <div class="summary-row total-row">
